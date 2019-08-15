@@ -1,7 +1,8 @@
 # CARLO
 2D Driving Simulator
+
 CARLO stands for _[CARLA](http://carla.org/) - Low Budget_. CARLO is definitely less realistic than CARLA, but it is much easier to play with. Most importantly, you can easily step the simulator in CARLO, and it is computationally much lighter.
-<img width="200" alt="CARLO - Example Image" src="carlo.png" />
+<img width="400" alt="CARLO - Example Image" src="carlo.png" />
 
 ## Dependencies
 You need to have the following libraries with [Python3](http://www.python.org/downloads):
@@ -16,7 +17,12 @@ Simply run
 for a simple demo. You can also have a look at this file to understand how to customize your own environment. It is very straightforward.
 
 ## Features
-CARLO currently 
+CARLO currently supports Cars and Pedestrians as the dynamic objects. They both use point-mass dynamics.
+
+It also supports Buildings and Paintings, which are useful mostly for decoration purposes (e.g. sidewalks, zebra crossings, etc).
+
+Collision dynamics are not implemented, but CARLO has methods that can check whether or not there exists a collision between two objects.
+
 There are many hidden features right now. I will reveal them as I start writing a documentation.
 
 ## Contributing
