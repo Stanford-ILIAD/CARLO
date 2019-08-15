@@ -2,7 +2,7 @@
 2D Driving Simulator
 
 CARLO stands for _[CARLA](http://carla.org/) - Low Budget_. CARLO is definitely less realistic than CARLA, but it is much easier to play with. Most importantly, you can easily step the simulator in CARLO, and it is computationally much lighter.
-<img width="400" alt="CARLO - Example Image" src="carlo.png" />
+<img width="600" alt="CARLO - Example Image" src="carlo.png" />
 
 ## Dependencies
 You need to have the following libraries with [Python3](http://www.python.org/downloads):
