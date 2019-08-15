@@ -1,5 +1,6 @@
 # CARLO
 2D Driving Simulator
+![CARLO - Example Image](carlo.png "CARLO - Example Image")
 
 ## Dependencies
 You need to have the following libraries with [Python3](http://www.python.org/downloads):
