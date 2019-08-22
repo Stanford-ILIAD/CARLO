@@ -79,13 +79,11 @@ class Point:
             print("Something went wrong!")
 
 
-"""
-Given three colinear points p, q, r, the function checks if 
-point q lies on line segment 'pr' 
-"""
-
-
 def onSegment(p: Point, q: Point, r: Point) -> bool:
+    """
+    Given three colinear points p, q, r, the function checks if 
+    point q lies on line segment 'pr' 
+    """
     return (
         q.x <= np.maximum(p.x, r.x)
         and q.x >= np.minimum(p.x, r.x)
@@ -94,16 +92,14 @@ def onSegment(p: Point, q: Point, r: Point) -> bool:
     )
 
 
-"""
-To find orientation of ordered triplet (p, q, r). 
-The function returns following values 
-0 --> p, q and r are colinear 
-1 --> Clockwise 
-2 --> Counterclockwise 
-"""
-
-
 def orientation(p: Point, q: Point, r: Point) -> int:
+    """
+    To find orientation of ordered triplet (p, q, r). 
+    The function returns following values 
+    0 --> p, q and r are colinear 
+    1 --> Clockwise 
+    2 --> Counterclockwise 
+    """
     # See https://www.geeksforgeeks.org/orientation-3-ordered-points/ for details of below formula.
     val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y)
     if val == 0:
@@ -185,26 +181,15 @@ class Line:
 
 
 class Rectangle:
-    def __init__(
-        self, c1: Point, c2: Point, c3: Point
-    ):  # 3 points are enough to represent a rectangle
+    # 3 points are enough to represent a rectangle
+    def __init__(self, c1: Point, c2: Point, c3: Point):
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
         self.c4 = c3 + c1 - c2
 
     def __str__(self):
-        return (
-            "Rectangle("
-            + str(self.c1)
-            + ", "
-            + str(self.c2)
-            + ", "
-            + str(self.c3)
-            + ", "
-            + str(self.c4)
-            + ")"
-        )
+        return "Rectangle({}, {}, {}, {})".format(self.c1, self.c2, self.c3, self.c4)
 
     @property
     def edges(self):
