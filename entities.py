@@ -13,6 +13,7 @@ class Entity:
         self.movable = movable
         self.color = "ghost white"
         self.collidable = True
+        self.obj = None  # MUST be set by subclasses.
         if movable:
             self.friction = friction
             self.velocity = Point(0, 0)  # this is xp, yp
@@ -62,9 +63,6 @@ class Entity:
             self.angular_velocity = new_angular_velocity
 
             self.buildGeometry()
-
-    def collidesWith(self, other) -> bool:
-        raise NotImplementedError
 
     def buildGeometry(self):  # builds the obj
         raise NotImplementedError
@@ -156,7 +154,7 @@ class RectangleEntity(Entity):
 
     def buildGeometry(self):
         C = self.corners
-        self.obj = Rectangle(*C[:-1])
+        self.obj = Rectangle(*C[:-1])  # pylint: disable=no-value-for-parameter
 
 
 class CircleEntity(Entity):
