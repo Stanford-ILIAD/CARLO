@@ -4,6 +4,49 @@ from typing import Union
 import copy
 
 
+def get_entity_dynamics(friction, min_speed, max_speed, xnp=np):
+    # xnp: Either numpy or jax.numpy.
+
+    def entity_dynamics(x, u, dt):
+        # x: (x, y, xp, yp, theta, ang_vel, acceleration)
+        # u: (steering angle, acceleration)
+        center = x[:2]
+        velocity = x[2:4]
+        speed = xnp.linalg.norm(velocity, ord=2)
+        heading = x[4]
+        angular_velocity = x[5]
+        old_acceleration = x[6]
+        steering_angle = u[0]
+        acceleration = u[1]
+
+        new_angular_velocity = speed * steering_angle
+        new_acceleration = acceleration - friction * speed
+
+        new_heading = heading + (angular_velocity + new_angular_velocity) * dt / 2.0
+        new_speed = xnp.clip(
+            speed + (old_acceleration + new_acceleration) * dt / 2.0,
+            min_speed,
+            max_speed,
+        )
+
+        next_speed = (speed + new_speed) / 2.0
+        next_heading = (new_heading + heading) / 2.0
+        new_velocity = next_speed * xnp.array(
+            (xnp.cos(next_heading), xnp.sin(next_heading))
+        )
+
+        new_center = center + (velocity + new_velocity) * dt / 2.0
+        return xnp.concatenate(
+            (
+                new_center,
+                new_velocity,
+                xnp.stack([new_heading, new_angular_velocity, new_acceleration]),
+            )
+        )
+
+    return entity_dynamics
+
+
 class Entity:
     def __init__(
         self, center: Point, heading: float, movable: bool = True, friction: float = 0
@@ -23,6 +66,9 @@ class Entity:
             self.inputAcceleration = 0
             self.max_speed = np.inf
             self.min_speed = 0
+            self.entity_dynamics = get_entity_dynamics(
+                friction, self.min_speed, self.max_speed, xnp=np
+            )
 
     @property
     def speed(self) -> float:
@@ -32,35 +78,30 @@ class Entity:
         self.inputSteering = inputSteering
         self.inputAcceleration = inputAcceleration
 
+    @property
+    def state(self):
+        return np.array(
+            (
+                self.x,
+                self.y,
+                self.xp,
+                self.yp,
+                self.heading,
+                self.angular_velocity,
+                self.acceleration,
+            )
+        )
+
     def tick(self, dt: float):
         if self.movable:
-            speed = self.speed
-            heading = self.heading
-
-            new_angular_velocity = speed * self.inputSteering
-            new_acceleration = self.inputAcceleration - self.friction * speed
-
-            new_heading = (
-                heading + (self.angular_velocity + new_angular_velocity) * dt / 2.0
-            )
-            new_speed = np.clip(
-                speed + (self.acceleration + new_acceleration) * dt / 2.0,
-                self.min_speed,
-                self.max_speed,
-            )
-
-            new_velocity = Point(
-                ((speed + new_speed) / 2.0) * np.cos((new_heading + heading) / 2.0),
-                ((speed + new_speed) / 2.0) * np.sin((new_heading + heading) / 2.0),
-            )
-
-            new_center = self.center + (self.velocity + new_velocity) * dt / 2.0
-
-            self.center = new_center
-            self.heading = new_heading
-            self.velocity = new_velocity
-            self.acceleration = new_acceleration
-            self.angular_velocity = new_angular_velocity
+            x = self.state
+            u = np.array((self.inputSteering, self.inputAcceleration))
+            new_x = self.entity_dynamics(x, u, dt)
+            self.center = Point(new_x[0], new_x[1])
+            self.velocity = Point(new_x[2], new_x[3])
+            self.heading = new_x[4]
+            self.angular_velocity = new_x[5]
+            self.acceleration = new_x[6]
 
             self.buildGeometry()
 

@@ -23,8 +23,8 @@ class DrivingEnv(gym.Env):
             "H": Car(Point(59.5, 25), np.pi / 2),
             "R": Car(Point(60.5, 20), np.pi / 2, "blue"),
         }
-        for car in self.cars.values():
-            self.world.add(car)
+        self.world.add(self.cars["H"])
+        self.world.add(self.cars["R"])
 
     def step(self, action: Dict[Text, Tuple[float, float]]):
         for car_name, car_action in action.items():
@@ -49,16 +49,12 @@ class DrivingEnv(gym.Env):
         control_cost = -np.square(car.inputAcceleration)
         return 0.2 * forward_vel - control_cost
 
-    def _get_car_state(self, name: Text) -> np.ndarray:
-        car = self.cars[name]
-        return np.array((car.x, car.y, car.xp, car.yp, car.heading))
-
     def _get_state(self) -> np.ndarray:
-        return np.concatenate((self._get_car_state("H"), self._get_car_state("R")))
+        return np.concatenate((self.cars["H"].state, self.cars["R"].state))
 
     def reset(self):
-        self.cars["H"].velocity = Point(0, 5)
-        self.cars["R"].velocity = Point(0, 5)
+        self.cars["H"].velocity = Point(0, 6)
+        self.cars["R"].velocity = Point(0, 6)
         return self._get_state()
 
     def render(self, mode="human"):
@@ -72,7 +68,7 @@ def main():
     env.render()
     episode_data = []
     while not done:
-        action = {"H": (0, 0), "R": (.05, 0)}
+        action = {"H": (0, 0), "R": (0, 0)}
         next_obs, rew, done, debug = env.step(action)
         del debug
         episode_data.append((obs, action, rew, next_obs, done))
