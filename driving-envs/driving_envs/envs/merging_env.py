@@ -21,7 +21,7 @@ class MergingEnv(gym.Env):
         ]
         self.cars = {
             "H": Car(Point(58.5, 10), np.pi / 2),
-            "R": Car(Point(61.5, 5), np.pi / 2, "blue"),
+            "R": Car(Point(58.5, 5), np.pi / 2, "blue"),
         }
         for building in self.buildings:
             self.world.add(building)

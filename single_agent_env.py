@@ -1,11 +1,12 @@
 import time
 from typing import Tuple
 import gym
+from gym import spaces
 import driving_envs  # pylint: disable=unused-import
 import numpy as np
 
 
-class PidAgent:
+class PidPolicy:
     """PID controller."""
 
     def __init__(
@@ -47,25 +48,47 @@ class PidAgent:
         self.errors = []
 
 
+class PidSingleEnv(gym.Env):
+    """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
+
+    def __init__(self, multi_env):
+        self.multi_env = multi_env
+        self._pid_human = PidPolicy(multi_env.dt, 8.0, 4.0, 12.0)
+        self.action_space = spaces.Box(np.array((-np.pi, -4.)), np.array((np.pi, 4.)))
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
+
+    def step(self, action):
+        h_action = self._pid_human.action(self.previous_obs)
+        multi_action = np.concatenate((h_action, action))
+        obs, rew, done, debug = self.multi_env.step(multi_action)
+        self.previous_obs = obs
+        return obs, rew["R"], done, debug
+
+    def reset(self):
+        obs = self.multi_env.reset()
+        self.previous_obs = obs
+        return obs
+
+    def render(self, mode="human"):
+        return self.multi_env.render(mode=mode)
+
+
 def main():
-    env = gym.make("Merging-v0")
+    multi_env = gym.make("Merging-v0")
+    env = PidSingleEnv(multi_env)
     done = False
     obs = env.reset()
     env.render()
     episode_data = []
-    human = PidAgent(env.dt, 8, 2.5, 10)
-    human.reset()
     while not done:
-        h_action = human.action(obs)
-        r_action = np.array((0.0, 4.0))
-        action = np.concatenate((h_action, r_action))
+        action = np.array((0.0, 4.0))
         next_obs, rew, done, debug = env.step(action)
         del debug
         episode_data.append((obs, action, rew, next_obs, done))
         obs = next_obs
         env.render()
-        time.sleep(env.dt)
-    env.world.close()
+        time.sleep(env.multi_env.dt)
+    env.multi_env.world.close()
     return
 
 
