@@ -10,8 +10,8 @@ class Car(RectangleEntity):
         center: Point,
         heading: float,
         color: str = "red",
-        min_acc: float = -3.0,
-        max_acc: float = 3.0,
+        min_acc: float = -4.0,
+        max_acc: float = 4.0,
     ):
         size = Point(4.0, 2.0)
         movable = True

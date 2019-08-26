@@ -1,6 +1,5 @@
 from typing import Dict, Text, Tuple
 import gym
-import matplotlib.pyplot as plt
 import numpy as np
 from world import World
 from agents import Car, Building, Pedestrian, Painting
@@ -15,10 +14,12 @@ class PidAgent:
         self,
         dt: float,
         target_dist: float,
+        max_acc: float,
         max_vel: float,
         params: Tuple[float, float, float] = (3.0, 0.0, 6.0),
     ):
         self._target_dist = target_dist
+        self._max_acc = max_acc
         self._max_vel = max_vel
         self.integral = 0
         self.errors = []
@@ -37,6 +38,9 @@ class PidAgent:
         derivative = their_y_dot - my_y_dot
         self.integral = self.integral + self.dt * error
         acc = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+        acc = np.clip(acc, -np.inf, self._max_acc)
+        if my_y_dot >= self._max_vel:
+            acc = 0
         self.errors.append(error)
         return np.array((0, acc))
 
@@ -52,12 +56,13 @@ class DrivingEnv(gym.Env):
         self.dt, self.width, self.height = dt, width, height
         self.world = World(self.dt, width=width, height=height, ppm=6)
         self.buildings = [
-            Building(Point(28.5, height / 2), Point(57, height), "gray80"),
-            Building(Point(91.5, height / 2), Point(57, height), "gray80"),
+            Building(Point(28.5, 60), Point(57, 120), "gray80"),
+            Building(Point(91.5, 50), Point(57, 100), "gray80"),
+            Building(Point(90, 110), Point(60, 20), "gray80"),
         ]
         self.cars = {
-            "H": Car(Point(59.5, 25), np.pi / 2),
-            "R": Car(Point(59.5, 20), np.pi / 2, "blue"),
+            "H": Car(Point(58.5, 10), np.pi / 2),
+            "R": Car(Point(61.5, 5), np.pi / 2, "blue"),
         }
         for building in self.buildings:
             self.world.add(building)
@@ -95,7 +100,7 @@ class DrivingEnv(gym.Env):
 
     def reset(self):
         self.cars["H"].velocity = Point(0, 7)
-        self.cars["R"].velocity = Point(0, 6)
+        self.cars["R"].velocity = Point(0, 7)
         return self.world.state
 
     def render(self, mode="human"):
@@ -108,11 +113,11 @@ def main():
     obs = env.reset()
     env.render()
     episode_data = []
-    human = PidAgent(env.dt, 8, 1.0)
+    human = PidAgent(env.dt, 8, 2.5, 10)
     human.reset()
     while not done:
         h_action = human.action(obs)
-        r_action = np.array((0.0, 1.0))
+        r_action = np.array((0.0, 4.0))
         action = np.concatenate((h_action, r_action))
         next_obs, rew, done, debug = env.step(action)
         del debug
@@ -121,8 +126,6 @@ def main():
         env.render()
         time.sleep(env.dt)
     env.world.close()
-    plt.plot(np.arange(len(human.errors)), human.errors)
-    plt.show()
     return
 
 
