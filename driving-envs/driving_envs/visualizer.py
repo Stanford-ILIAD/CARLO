@@ -1,5 +1,5 @@
-from graphics import *
-from entities import RectangleEntity, CircleEntity
+from driving_envs.graphics import *
+from driving_envs.entities import RectangleEntity, CircleEntity
 
 
 class Visualizer:
@@ -12,6 +12,7 @@ class Visualizer:
         self.display_width, self.display_height = int(width * ppm), int(height * ppm)
         self.window_created = False
         self.visualized_imgs = []
+        self.win = None
 
     def create_window(self, bg_color: str = "gray80"):
         if not self.window_created or self.win.isClosed():

@@ -1,8 +1,8 @@
-import numpy as np
-from agents import Car, Pedestrian, Building
-from entities import Entity
 from typing import Union
-from visualizer import Visualizer
+import numpy as np
+from driving_envs.agents import Car, Pedestrian, Building
+from driving_envs.entities import Entity
+from driving_envs.visualizer import Visualizer
 
 
 class World:
