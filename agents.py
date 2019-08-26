@@ -5,11 +5,20 @@ from geometry import Point
 
 
 class Car(RectangleEntity):
-    def __init__(self, center: Point, heading: float, color: str = "red"):
+    def __init__(
+        self,
+        center: Point,
+        heading: float,
+        color: str = "red",
+        min_acc: float = -3.0,
+        max_acc: float = 3.0,
+    ):
         size = Point(4.0, 2.0)
         movable = True
         friction = 0.06
-        super(Car, self).__init__(center, heading, size, movable, friction)
+        super(Car, self).__init__(
+            center, heading, size, movable, friction, min_acc=min_acc, max_acc=max_acc
+        )
         self.color = color
         self.collidable = True
 

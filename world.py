@@ -1,3 +1,4 @@
+import numpy as np
 from agents import Car, Pedestrian, Building
 from entities import Entity
 from typing import Union
@@ -26,6 +27,10 @@ class World:
     def render(self):
         self.visualizer.create_window(bg_color="gray")
         self.visualizer.update_agents(self.agents)
+
+    @property
+    def state(self):
+        return np.concatenate([agent.state for agent in self.dynamic_agents])
 
     @property
     def agents(self):

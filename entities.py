@@ -1,10 +1,11 @@
+import math
 import numpy as np
 from geometry import Point, Rectangle, Circle
 from typing import Union
 import copy
 
 
-def get_entity_dynamics(friction, min_speed, max_speed, xnp=np):
+def get_entity_dynamics(friction, min_speed, max_speed, min_acc, max_acc, xnp=np):
     # xnp: Either numpy or jax.numpy.
 
     def entity_dynamics(x, u, dt):
@@ -17,7 +18,7 @@ def get_entity_dynamics(friction, min_speed, max_speed, xnp=np):
         angular_velocity = x[5]
         old_acceleration = x[6]
         steering_angle = u[0]
-        acceleration = u[1]
+        acceleration = xnp.clip(u[1], min_acc, max_acc)
 
         new_angular_velocity = speed * steering_angle
         new_acceleration = acceleration - friction * speed
@@ -49,7 +50,15 @@ def get_entity_dynamics(friction, min_speed, max_speed, xnp=np):
 
 class Entity:
     def __init__(
-        self, center: Point, heading: float, movable: bool = True, friction: float = 0
+        self,
+        center: Point,
+        heading: float,
+        movable: bool = True,
+        friction: float = 0.0,
+        min_speed: float = 0.0,
+        max_speed: float = math.inf,
+        min_acc: float = -math.inf,
+        max_acc: float = math.inf,
     ):
         self.center = center  # this is x, y
         self.heading = heading
@@ -64,10 +73,17 @@ class Entity:
             self.angular_velocity = 0  # this is headingp
             self.inputSteering = 0
             self.inputAcceleration = 0
-            self.max_speed = np.inf
-            self.min_speed = 0
+            self.min_speed = min_speed
+            self.max_speed = max_speed
+            self.min_acc = min_acc
+            self.max_acc = max_acc
             self.entity_dynamics = get_entity_dynamics(
-                friction, self.min_speed, self.max_speed, xnp=np
+                friction,
+                self.min_speed,
+                self.max_speed,
+                self.min_acc,
+                self.max_acc,
+                xnp=np,
             )
 
     @property
@@ -152,8 +168,11 @@ class RectangleEntity(Entity):
         size: Point,
         movable: bool = True,
         friction: float = 0,
+        **kwargs
     ):
-        super(RectangleEntity, self).__init__(center, heading, movable, friction)
+        super(RectangleEntity, self).__init__(
+            center, heading, movable, friction, **kwargs
+        )
         self.size = size
         self.buildGeometry()
 
@@ -206,8 +225,9 @@ class CircleEntity(Entity):
         radius: float,
         movable: bool = True,
         friction: float = 0,
+        **kwargs
     ):
-        super(CircleEntity, self).__init__(center, heading, movable, friction)
+        super(CircleEntity, self).__init__(center, heading, movable, friction, **kwargs)
         self.radius = radius
         self.buildGeometry()
 
