@@ -28,9 +28,7 @@ class Visualizer:
             if imgItem["movable"]:
                 imgItem["graphics"].undraw()
             else:
-                new_visualized_imgs.append(
-                    {"movable": False, "graphics": imgItem["graphics"]}
-                )
+                new_visualized_imgs.append({"movable": False, "graphics": imgItem["graphics"]})
 
         # Add the updated movable agents (and the unmovable ones if they were not rendered before)
         for agent in agents:

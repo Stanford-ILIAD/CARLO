@@ -25,16 +25,12 @@ def get_entity_dynamics(friction, min_speed, max_speed, min_acc, max_acc, xnp=np
 
         new_heading = heading + (angular_velocity + new_angular_velocity) * dt / 2.0
         new_speed = xnp.clip(
-            speed + (old_acceleration + new_acceleration) * dt / 2.0,
-            min_speed,
-            max_speed,
+            speed + (old_acceleration + new_acceleration) * dt / 2.0, min_speed, max_speed
         )
 
         next_speed = (speed + new_speed) / 2.0
         next_heading = (new_heading + heading) / 2.0
-        new_velocity = next_speed * xnp.array(
-            (xnp.cos(next_heading), xnp.sin(next_heading))
-        )
+        new_velocity = next_speed * xnp.array((xnp.cos(next_heading), xnp.sin(next_heading)))
 
         new_center = center + (velocity + new_velocity) * dt / 2.0
         return xnp.concatenate(
@@ -78,12 +74,7 @@ class Entity:
             self.min_acc = min_acc
             self.max_acc = max_acc
             self.entity_dynamics = get_entity_dynamics(
-                friction,
-                self.min_speed,
-                self.max_speed,
-                self.min_acc,
-                self.max_acc,
-                xnp=np,
+                friction, self.min_speed, self.max_speed, self.min_acc, self.max_acc, xnp=np
             )
 
     @property
@@ -170,9 +161,7 @@ class RectangleEntity(Entity):
         friction: float = 0,
         **kwargs
     ):
-        super(RectangleEntity, self).__init__(
-            center, heading, movable, friction, **kwargs
-        )
+        super(RectangleEntity, self).__init__(center, heading, movable, friction, **kwargs)
         self.size = size
         self.buildGeometry()
 

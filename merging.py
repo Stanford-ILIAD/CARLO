@@ -104,6 +104,8 @@ class DrivingEnv(gym.Env):
         return self.world.state
 
     def render(self, mode="human"):
+        if mode != "human":
+            raise NotImplementedError("Unsupported mode: {}".format(mode))
         self.world.render()
 
 

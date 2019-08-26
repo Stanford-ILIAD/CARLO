@@ -40,17 +40,11 @@ class World:
         if agent is None:
             for i in range(len(self.dynamic_agents)):
                 for j in range(i + 1, len(self.dynamic_agents)):
-                    if (
-                        self.dynamic_agents[i].collidable
-                        and self.dynamic_agents[j].collidable
-                    ):
+                    if self.dynamic_agents[i].collidable and self.dynamic_agents[j].collidable:
                         if self.dynamic_agents[i].collidesWith(self.dynamic_agents[j]):
                             return True
                 for j in range(len(self.static_agents)):
-                    if (
-                        self.dynamic_agents[i].collidable
-                        and self.static_agents[j].collidable
-                    ):
+                    if self.dynamic_agents[i].collidable and self.static_agents[j].collidable:
                         if self.dynamic_agents[i].collidesWith(self.static_agents[j]):
                             return True
             return False
