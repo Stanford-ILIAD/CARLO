@@ -14,21 +14,7 @@ class MergingEnv(gym.Env):
         super(MergingEnv, self).__init__()
         self.dt, self.width, self.height = dt, width, height
         self.world = World(self.dt, width=width, height=height, ppm=6)
-        self.buildings = [
-            Building(Point(28.5, 60), Point(57, 120), "gray80"),
-            Building(Point(91.5, 50), Point(57, 100), "gray80"),
-            Building(Point(90, 110), Point(60, 20), "gray80"),
-        ]
-        self.cars = {
-            "H": Car(Point(58.5, 10), np.pi / 2),
-            "R": Car(Point(58.5, 5), np.pi / 2, "blue"),
-        }
-        for building in self.buildings:
-            self.world.add(building)
-        # NOTE: Order that dynamic agents are added to world determines
-        # the concatenated state and action representation.
-        self.world.add(self.cars["H"])
-        self.world.add(self.cars["R"])
+        self.buildings, self.cars = [], {}
 
     def step(self, action: np.ndarray):
         offset = 0
@@ -58,6 +44,22 @@ class MergingEnv(gym.Env):
         return 0.2 * forward_vel - control_cost
 
     def reset(self):
+        self.world.reset()
+        self.buildings = [
+            Building(Point(28.5, 60), Point(57, 120), "gray80"),
+            Building(Point(91.5, 50), Point(57, 100), "gray80"),
+            Building(Point(90, 110), Point(60, 20), "gray80"),
+        ]
+        self.cars = {
+            "H": Car(Point(58.5, 10), np.pi / 2),
+            "R": Car(Point(58.5, 5), np.pi / 2, "blue"),
+        }
+        for building in self.buildings:
+            self.world.add(building)
+        # NOTE: Order that dynamic agents are added to world determines
+        # the concatenated state and action representation.
+        self.world.add(self.cars["H"])
+        self.world.add(self.cars["R"])
         self.cars["H"].velocity = Point(0, 7)
         self.cars["R"].velocity = Point(0, 7)
         return self.world.state
