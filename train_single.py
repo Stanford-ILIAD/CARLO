@@ -1,42 +1,30 @@
-import time
+import argparse
 import gym
-from single_agent_env import PidSingleEnv, PidDiscreteSingleEnv
-from stable_baselines import PPO2
+from single_agent_env import make_single_env
+from stable_baselines import PPO2, SAC
 from stable_baselines.common.policies import MlpPolicy, MlpLnLstmPolicy
+from stable_baselines.sac.policies import MlpPolicy as SacMlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 
 
-def make_single_env():
-    multi_env = gym.make("Merging-v0")
-    env = PidSingleEnv(multi_env)
-    return env
-
-
-def train():
+def train(experiment_name, logdir, total_timesteps):
     env = DummyVecEnv([make_single_env])
-    model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log='/tmp/ppo_driving', n_steps=400)
-    model.learn(total_timesteps=500000)
-    model.save("ppo_driving")
+    model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log=logdir, n_steps=500)
+    model.learn(total_timesteps=total_timesteps)
+    model.save(experiment_name)
 
 
-def test():
-    model = PPO2.load("ppo_driving")
+def train_sac(experiment_name, logdir, total_timesteps):
     env = DummyVecEnv([make_single_env])
-
-    # Enjoy trained agent
-    obs = env.reset()
-    env.render()
-    ret = 0
-    i = 0
-    while i < 400:
-        action, _states = model.predict(obs, deterministic=True)
-        obs, rewards, dones, info = env.step(action)
-        ret += rewards
-        env.render()
-        time.sleep(.04)
-        i += 1
-    print(ret)
+    model = SAC(SacMlpPolicy, env, verbose=1, tensorboard_log=logdir)
+    model.learn(total_timesteps=total_timesteps)
+    model.save(experiment_name)
 
 
 if __name__ == "__main__":
-    test()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("experiment_name", type=str)
+    parser.add_argument("--logdir", type=str, default="/tmp/ppo_driving")
+    parser.add_argument("--total_timesteps", type=int, default=500000)
+    args = parser.parse_args()
+    train(args.experiment_name, args.logdir, args.total_timesteps)
