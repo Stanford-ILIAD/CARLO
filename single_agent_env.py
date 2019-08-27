@@ -28,6 +28,7 @@ class PidPolicy:
     def action(self, obs):
         # Assume that the agent is the Human.
         my_y, their_y = obs[1], obs[8]
+        their_x = obs[9]
         my_y_dot, their_y_dot = obs[3], obs[10]
         if their_y > my_y:
             target = their_y - self._target_dist
@@ -40,6 +41,8 @@ class PidPolicy:
         acc = np.clip(acc, -np.inf, self._max_acc)
         if my_y_dot >= self._max_vel:
             acc = 0
+        if their_x <= 57:  # If other car has turned left already, just drive straight.
+            acc = 1.0
         self.errors.append(error)
         return np.array((0, acc))
 
@@ -73,21 +76,28 @@ class PidSingleEnv(gym.Env):
         return self.multi_env.render(mode=mode)
 
 
-def main():
+def make_single_env():
     multi_env = gym.make("Merging-v0")
     env = PidSingleEnv(multi_env)
-    done = False
-    obs = env.reset()
-    env.render()
-    episode_data = []
-    while not done:
-        action = np.array((0.0, 4.0))
-        next_obs, rew, done, debug = env.step(action)
-        del debug
-        episode_data.append((obs, action, rew, next_obs, done))
-        obs = next_obs
+    return env
+
+
+def main():
+    env = make_single_env()
+    for _ in range(2):
+        done = False
+        obs = env.reset()
         env.render()
-        time.sleep(env.multi_env.dt)
+        episode_data = []
+        while not done:
+            action = np.array((0.0, 4.0))
+            next_obs, rew, done, debug = env.step(action)
+            print(rew)
+            del debug
+            episode_data.append((obs, action, rew, next_obs, done))
+            obs = next_obs
+            env.render()
+            time.sleep(env.multi_env.dt)
     env.multi_env.world.close()
     return
 
