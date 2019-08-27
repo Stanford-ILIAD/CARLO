@@ -33,22 +33,30 @@ class MergingEnv(gym.Env):
                 if car.collidesWith(building):
                     reward[car_name] -= 100
                     done = True
-            if car.y >= self.height:
+            if car.y >= self.height or car.y <= 0 or car.x <= 0:
                 done = True
         return self.world.state, reward, done, {}
 
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
-        forward_vel = car.velocity.y
+        vel_rew = 0
+        if car.y <= 65:
+            vel_rew = car.velocity.y
+        if car.y >= 86:
+            vel_rew = -car.velocity.y
+        if 80 <= car.y <= 86:
+            vel_rew = -car.velocity.x
+            # Orient car angle to turn left.
+            vel_rew -= np.abs(np.pi - car.state[4])
         control_cost = np.square(car.inputAcceleration)
-        return 0.1 * forward_vel - .02 * control_cost
+        return 0.1 * vel_rew - .02 * control_cost
 
     def reset(self):
         self.world.reset()
         self.buildings = [
-            Building(Point(28.5, 60), Point(57, 120), "gray80"),
-            Building(Point(91.5, 50), Point(57, 100), "gray80"),
-            Building(Point(90, 110), Point(60, 20), "gray80"),
+            Building(Point(28.5, 40), Point(57, 80), "gray80"),
+            Building(Point(28.5, 103), Point(57, 34), "gray80"),
+            Building(Point(91.5, 60), Point(57, 120), "gray80"),
         ]
         self.cars = {
             "H": Car(Point(58.5, 10), np.pi / 2),
