@@ -40,8 +40,8 @@ class MergingEnv(gym.Env):
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
         forward_vel = car.velocity.y
-        control_cost = -np.square(car.inputAcceleration)
-        return 0.2 * forward_vel - control_cost
+        control_cost = np.square(car.inputAcceleration)
+        return 0.5 * forward_vel - .1 * control_cost
 
     def reset(self):
         self.world.reset()
