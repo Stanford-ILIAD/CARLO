@@ -33,8 +33,8 @@ class MergingEnv(gym.Env):
                 if car.collidesWith(building):
                     reward[car_name] -= 200
                     done = True
-            # if car_name == "R" and car.y >= self.height or car.y <= 0 or car.x <= 0:
-            #     done = True
+            if car_name == "R" and car.y >= self.height or car.y <= 0 or car.x <= 0:
+                done = True
         return self.world.state, reward, done, {}
 
     def _get_vel_reward(self, car):
@@ -57,7 +57,6 @@ class MergingEnv(gym.Env):
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
         vel_rew = self._get_vel_reward(car)
-        # vel_rew = self._get_pos_reward(car)
         control_cost = np.square(car.inputAcceleration)
         return 0.1 * vel_rew - 0.0 * control_cost
 
