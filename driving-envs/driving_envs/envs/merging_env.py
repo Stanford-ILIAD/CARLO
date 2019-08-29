@@ -25,31 +25,41 @@ class MergingEnv(gym.Env):
         done = False
         reward = {name: self._get_car_reward(name) for name in self.cars.keys()}
         if self.cars["R"].collidesWith(self.cars["H"]):
-            reward["H"] -= 100
-            reward["R"] -= 100
+            reward["H"] -= 200
+            reward["R"] -= 200
             done = True
         for car_name, car in self.cars.items():
             for building in self.buildings:
                 if car.collidesWith(building):
-                    reward[car_name] -= 100
+                    reward[car_name] -= 200
                     done = True
-            if car.y >= self.height or car.y <= 0 or car.x <= 0:
-                done = True
+            # if car_name == "R" and car.y >= self.height or car.y <= 0 or car.x <= 0:
+            #     done = True
         return self.world.state, reward, done, {}
+
+    def _get_vel_reward(self, car):
+        vel_rew = 0
+        if car.y <= 80:
+            vel_rew = car.velocity.y
+        elif car.y >= 86:
+            vel_rew = -car.velocity.y
+        else:
+            vel_rew = -car.velocity.x
+            # Orient car angle to turn left.
+            # vel_rew -= np.square(np.pi - car.state[4])
+        return vel_rew
+
+    def _get_pos_reward(self, car):
+        car_pos = np.array((car.x, car.y))
+        target = np.array((0.0, 83.0))
+        return -np.linalg.norm(target - car_pos, ord=1) / 10
 
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
-        vel_rew = 0
-        if car.y <= 65:
-            vel_rew = car.velocity.y
-        if car.y >= 86:
-            vel_rew = -car.velocity.y
-        if 80 <= car.y <= 86:
-            vel_rew = -car.velocity.x
-            # Orient car angle to turn left.
-            vel_rew -= np.abs(np.pi - car.state[4])
+        vel_rew = self._get_vel_reward(car)
+        # vel_rew = self._get_pos_reward(car)
         control_cost = np.square(car.inputAcceleration)
-        return 0.1 * vel_rew - .02 * control_cost
+        return 0.1 * vel_rew - 0.0 * control_cost
 
     def reset(self):
         self.world.reset()

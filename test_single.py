@@ -2,22 +2,25 @@ import argparse
 import time
 import gym
 from single_agent_env import make_single_env
-from stable_baselines import PPO2
-from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines import PPO2, SAC
+from stable_baselines.common.vec_env import DummyVecEnv, vec_normalize
 
 
 def test(experiment_name):
     model = PPO2.load(experiment_name)
-    env = DummyVecEnv([make_single_env])
+    env = vec_normalize.VecNormalize(DummyVecEnv([make_single_env]), training=False)
+    env.load_running_average("{}_avgs".format(experiment_name))
 
     # Enjoy trained agent
     obs = env.reset()
     env.render()
+    input()
     ret = 0
     i = 0
-    while i < 400:
-        action, _states = model.predict(obs, deterministic=True)
+    while i < 300:
+        action, _states = model.predict(obs, deterministic=False)
         obs, rewards, dones, info = env.step(action)
+        print(rewards)
         ret += rewards
         env.render()
         time.sleep(0.04)

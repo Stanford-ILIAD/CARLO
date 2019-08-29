@@ -3,6 +3,7 @@ from typing import Tuple
 import gym
 from gym import spaces
 import driving_envs  # pylint: disable=unused-import
+from driving_envs.graphics import Transform
 import numpy as np
 
 
@@ -82,22 +83,39 @@ def make_single_env():
     return env
 
 
+def get_action(car, click_pt):
+    # TODO(allanz): Should use setCoords but somehow the visualizer
+    # is not using transform.screen() properly (internal bug).
+    x, y = Transform(720, 720, 0, 0, 120, 120).world(click_pt.x, click_pt.y)
+    vec = np.array((x - car.x, y - car.y))
+    angle = -(np.pi / 2 - np.arctan2(vec[1], vec[0]))
+    return (angle, 1.0)
+
+
 def main():
     env = make_single_env()
-    for _ in range(2):
+    for _ in range(1):
         done = False
         obs = env.reset()
         env.render()
         episode_data = []
+        i = 0
+        ret = 0
         while not done:
-            action = np.array((0.0, 4.0))
+            action = (0.0, 1.0)
+            click_pt = env.multi_env.world.visualizer.win.checkMouse()
+            if click_pt is not None:
+                action = get_action(env.multi_env.cars["R"], click_pt)
             next_obs, rew, done, debug = env.step(action)
-            print(rew)
+            print("{:d}: {:.2f}".format(i, rew))
+            ret += rew
             del debug
             episode_data.append((obs, action, rew, next_obs, done))
             obs = next_obs
             env.render()
             time.sleep(env.multi_env.dt)
+            i += 1
+        print("RETURN: {}".format(ret))
     env.multi_env.world.close()
     return
 
