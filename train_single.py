@@ -11,7 +11,7 @@ from single_agent_env import make_single_env
 from stable_baselines import PPO2
 from stable_baselines.common.policies import MlpPolicy, MlpLnLstmPolicy
 from stable_baselines.ddpg.noise import NormalActionNoise
-from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines.common.vec_env import SubprocVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 
 gin_PPO2 = gin.external_configurable(PPO2)
@@ -19,8 +19,8 @@ gin_VecNormalize = gin.external_configurable(VecNormalize)
 
 
 @gin.configurable
-def train(logdir, experiment_name=gin.REQUIRED, timesteps=gin.REQUIRED):
-    env = gin_VecNormalize(SubprocVecEnv(3 * [make_single_env]))
+def train(logdir, num_envs=1, experiment_name=gin.REQUIRED, timesteps=gin.REQUIRED):
+    env = gin_VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
     model = gin_PPO2(
         MlpPolicy,
         env,

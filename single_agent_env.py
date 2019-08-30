@@ -102,7 +102,7 @@ def main():
         i = 0
         ret = 0
         while not done:
-            action = (0.0, 1.0)
+            action = (0.0, 3.0)
             click_pt = env.multi_env.world.visualizer.win.checkMouse()
             if click_pt is not None:
                 action = get_action(env.multi_env.cars["R"], click_pt)

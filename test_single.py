@@ -20,7 +20,7 @@ def test(experiment_name):
     ret = 0
     i = 0
     dones = np.array([False])
-    while i < 400:
+    while not np.all(dones):
         action, _states = model.predict(obs, deterministic=False)
         obs, rewards, dones, info = env.step(action)
         print(rewards)
