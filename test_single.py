@@ -21,14 +21,14 @@ def test(experiment_name):
     i = 0
     dones = np.array([False])
     while not np.all(dones):
-        action, _states = model.predict(obs, deterministic=False)
+        action, _states = model.predict(obs, deterministic=True)
         obs, rewards, dones, info = env.step(action)
         print(rewards)
         ret += rewards
         env.render()
         time.sleep(0.04)
         i += 1
-    print(ret)
+    print("Steps: {:d}\tRet: {}".format(i, ret))
 
 
 if __name__ == "__main__":

@@ -117,12 +117,9 @@ class MergingEnv(gym.Env):
                 done = True
         return self.world.state, reward, done, {}
 
-    def _get_vel_reward(self, car):
-        return car.velocity.y
-
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
-        vel_rew = self._get_vel_reward(car)
+        vel_rew = car.velocity.y
         control_cost = np.square(car.inputAcceleration)
         return 0.1 * vel_rew - 0.0 * control_cost
 
@@ -130,12 +127,12 @@ class MergingEnv(gym.Env):
         self.world.reset()
         self.buildings = [
             Building(Point(28.5, 60), Point(57, 120), "gray80"),
-            Building(Point(91.5, 40), Point(57, 80), "gray80"),
-            Building(Point(90.5, 100), Point(59, 40), "gray80"),
+            Building(Point(91.5, 50), Point(57, 100), "gray80"),
+            Building(Point(90.5, 110), Point(59, 20), "gray80"),
         ]
         self.cars = {
-            "H": Car(Point(58.5, 10), np.pi / 2),
-            "R": Car(Point(58.5, 5), np.pi / 2, "blue"),
+            "H": Car(Point(58.5, 15), np.pi / 2),
+            "R": Car(Point(60, 5), np.pi / 2, "blue"),
         }
         for building in self.buildings:
             self.world.add(building)
@@ -143,8 +140,8 @@ class MergingEnv(gym.Env):
         # the concatenated state and action representation.
         self.world.add(self.cars["H"])
         self.world.add(self.cars["R"])
-        self.cars["H"].velocity = Point(0, 7)
-        self.cars["R"].velocity = Point(0, 7)
+        self.cars["H"].velocity = Point(0, 12)
+        self.cars["R"].velocity = Point(0, 15)
         return self.world.state
 
     def render(self, mode="human"):

@@ -29,7 +29,6 @@ class PidPolicy:
     def action(self, obs):
         # Assume that the agent is the Human.
         my_y, their_y = obs[1], obs[8]
-        their_x = obs[9]
         my_y_dot, their_y_dot = obs[3], obs[10]
         if their_y > my_y:
             target = their_y - self._target_dist
@@ -42,8 +41,6 @@ class PidPolicy:
         acc = np.clip(acc, -np.inf, self._max_acc)
         if my_y_dot >= self._max_vel:
             acc = 0
-        if their_x <= 57:  # If other car has turned left already, just drive straight.
-            acc = 1.0
         self.errors.append(error)
         return np.array((0, acc))
 
@@ -57,8 +54,8 @@ class PidSingleEnv(gym.Env):
 
     def __init__(self, multi_env):
         self.multi_env = multi_env
-        self._pid_human = PidPolicy(multi_env.dt, 8.0, 4.0, 12.0)
-        self.action_space = spaces.Box(np.array((-0.2, -4.0)), np.array((0.2, 4.0)))
+        self._pid_human = PidPolicy(multi_env.dt, 10, 2.0, 15)
+        self.action_space = spaces.Box(np.array((-0.1, -4.0)), np.array((0.1, 4.0)))
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
 
     def step(self, action):
@@ -89,6 +86,7 @@ def get_action(car, click_pt):
     x, y = Transform(720, 720, 0, 0, 120, 120).world(click_pt.x, click_pt.y)
     vec = np.array((x - car.x, y - car.y))
     angle = -(np.pi / 2 - np.arctan2(vec[1], vec[0]))
+    print(angle)
     return (angle, 1.0)
 
 
@@ -107,7 +105,6 @@ def main():
             if click_pt is not None:
                 action = get_action(env.multi_env.cars["R"], click_pt)
             next_obs, rew, done, debug = env.step(action)
-            print("{:d}: {:.2f}".format(i, rew))
             ret += rew
             del debug
             episode_data.append((obs, action, rew, next_obs, done))
@@ -115,7 +112,7 @@ def main():
             env.render()
             time.sleep(env.multi_env.dt)
             i += 1
-        print("RETURN: {}".format(ret))
+        print("i: {}, Return: {}".format(i, ret))
     env.multi_env.world.close()
     return
 
