@@ -8,19 +8,22 @@ import gin
 import gym
 import numpy as np
 from single_agent_env import make_single_env
-from stable_baselines import PPO2
-from stable_baselines.common.policies import MlpPolicy
-from stable_baselines.common.vec_env import SubprocVecEnv
+from stable_baselines import SAC
+from stable_baselines.sac.policies import MlpPolicy, LnMlpPolicy
+from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 
-PPO2 = gin.external_configurable(PPO2)
+SAC = gin.external_configurable(SAC)
 VecNormalize = gin.external_configurable(VecNormalize)
 
 
 @gin.configurable
-def train(logdir, num_envs=1, experiment_name=gin.REQUIRED, timesteps=gin.REQUIRED):
-    env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
-    model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log=logdir)
+def train(
+    logdir, num_envs=1, experiment_name=gin.REQUIRED, timesteps=gin.REQUIRED, layer_norm=True
+):
+    env = VecNormalize(DummyVecEnv([make_single_env]))
+    policy_cls = LnMlpPolicy if layer_norm else MlpPolicy
+    model = SAC(policy_cls, env, verbose=1, tensorboard_log=logdir)
     model.learn(total_timesteps=timesteps)
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)

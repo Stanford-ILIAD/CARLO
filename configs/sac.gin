@@ -1,0 +1,7 @@
+train.num_envs = 3
+train.experiment_name = "sac_driving"
+train.timesteps = 300000
+train.layer_norm = True
+SAC.gamma = 0.999
+SAC.buffer_size = 100000
+VecNormalize.norm_reward = False
