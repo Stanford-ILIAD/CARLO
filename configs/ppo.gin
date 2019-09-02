@@ -1,7 +1,7 @@
 train.num_envs = 3
 train.experiment_name = "ppo_driving"
-train.timesteps = 500000
+train.timesteps = 1000000
 PPO2.gamma = 0.999
-PPO2.n_steps = 300
+PPO2.n_steps = 200
 PPO2.ent_coef = 5e-4
 VecNormalize.norm_reward = False
