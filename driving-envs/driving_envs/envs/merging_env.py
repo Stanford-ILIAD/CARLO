@@ -1,3 +1,4 @@
+import math
 from typing import Dict, Text, Tuple
 import gym
 import numpy as np
@@ -109,20 +110,23 @@ class MergingEnv(gym.Env):
             reward["R"] -= 200
             done = True
         for car_name, car in self.cars.items():
+            for i in range(len(self.car_milestones[car_name])):
+                milestone = self.car_milestones[car_name][i]
+                if car.y > milestone:
+                    reward[car_name] += 20 * (i + 1)
+                    self.car_milestones[car_name][i] = math.inf
             for building in self.buildings:
                 if car.collidesWith(building):
                     reward[car_name] -= 200
                     done = True
             if car_name == "R" and car.y >= self.height or car.y <= 0:
-                if car.y >= self.height:
-                    reward[car_name] += 200
                 done = True
         return self.world.state, reward, done, {}
 
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
         # vel_rew = car.velocity.y
-        dist_rew = -.0001 * np.square((121 - car.y))
+        dist_rew = -0.0001 * np.square((121 - car.y))
         control_cost = np.square(car.inputAcceleration)
         return dist_rew - 0.0 * control_cost
 
@@ -145,6 +149,7 @@ class MergingEnv(gym.Env):
         self.world.add(self.cars["R"])
         self.cars["H"].velocity = Point(0, 10)
         self.cars["R"].velocity = Point(0, 12)
+        self.car_milestones = {car_name: [80, 90, 100, 110, 120] for car_name in self.cars}
         return self.world.state
 
     def render(self, mode="human"):
