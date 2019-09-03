@@ -168,8 +168,11 @@ UNSUPPORTED_METHOD = "Object doesn't support operation"
 BAD_OPTION = "Illegal option value"
 DEAD_THREAD = "Graphics thread quit unexpectedly"
 
-_root = tk.Tk()
-_root.withdraw()
+try:
+    _root = tk.Tk()
+    _root.withdraw()
+except:
+    _root = None
 
 
 def update():
