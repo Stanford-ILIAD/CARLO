@@ -140,8 +140,8 @@ class MergingEnv(gym.Env):
             Building(Point(90.5, 110), Point(59, 20), "gray80"),
         ]
         self.cars = {
-            "H": Car(Point(58.5, 12), np.pi / 2),
-            "R": Car(Point(61, 5), np.pi / 2, "blue"),
+            "H": Car(Point(58.5, 5), np.pi / 2),
+            "R": Car(Point(61.5, 5), np.pi / 2, "blue"),
         }
         for building in self.buildings:
             self.world.add(building)
@@ -150,7 +150,7 @@ class MergingEnv(gym.Env):
         self.world.add(self.cars["H"])
         self.world.add(self.cars["R"])
         self.cars["H"].velocity = Point(0, 10)
-        self.cars["R"].velocity = Point(0, 12)
+        self.cars["R"].velocity = Point(0, 10)
         self.car_milestones = {car_name: [] for car_name in self.cars}
         return self.world.state
 
