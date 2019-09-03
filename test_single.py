@@ -10,7 +10,9 @@ from stable_baselines.common.vec_env import DummyVecEnv, vec_normalize
 
 def test(experiment_name):
     model = PPO2.load(os.path.join(experiment_name, "model"))
-    env = vec_normalize.VecNormalize(DummyVecEnv([make_single_env]), training=False)
+    env = vec_normalize.VecNormalize(
+        DummyVecEnv([make_single_env]), training=False, norm_reward=False
+    )
     env.load_running_average(experiment_name)
 
     # Enjoy trained agent

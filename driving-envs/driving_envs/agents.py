@@ -13,7 +13,7 @@ class Car(RectangleEntity):
         min_acc: float = -4.0,
         max_acc: float = 4.0,
     ):
-        size = Point(4.0, 2.0)
+        size = Point(3.0, 2.0)
         movable = True
         friction = 0.06
         super(Car, self).__init__(
