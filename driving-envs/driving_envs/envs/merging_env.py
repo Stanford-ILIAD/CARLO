@@ -106,8 +106,6 @@ class MergingEnv(gym.Env):
         done = False
         reward = {name: self._get_car_reward(name) for name in self.cars.keys()}
         if self.cars["R"].collidesWith(self.cars["H"]):
-            reward["H"] -= 200
-            reward["R"] -= 200
             done = True
         for car_name, car in self.cars.items():
             for i in range(len(self.car_milestones[car_name])):
@@ -117,12 +115,14 @@ class MergingEnv(gym.Env):
                     self.car_milestones[car_name][i] = math.inf
             for building in self.buildings:
                 if car.collidesWith(building):
-                    reward[car_name] -= 200
                     done = True
             if car_name == "R" and car.y >= self.height or car.y <= 0:
+                done = True
+        if done:
+            for car_name, car in self.cars.items():
+                reward[car_name] -= 2 * (120 - car.y)
                 if car.y >= self.height:
                     reward[car_name] += 200
-                done = True
         return self.world.state, reward, done, {}
 
     def _get_car_reward(self, name: Text):
