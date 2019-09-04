@@ -89,7 +89,6 @@ class TurningEnv(gym.Env):
         self.world.render()
 
 
-@gin.configurable
 class MergingEnv(gym.Env):
     """Driving gym interface."""
 
