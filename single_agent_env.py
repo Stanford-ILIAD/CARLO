@@ -54,13 +54,15 @@ class PidSingleEnv(gym.Env):
 
     def __init__(self, multi_env):
         self.multi_env = multi_env
-        self._pid_human = PidPolicy(multi_env.dt, 10, 4.0, 12)
-        self.action_space = spaces.Box(np.array((-0.1, -4.0)), np.array((0.1, 4.0)))
+        self._pid_human = PidPolicy(multi_env.dt, 10, 2.0, 11)
+        # self.action_space = spaces.Box(np.array((-0.1, -4.0)), np.array((0.1, 4.0)))
+        self.action_space = spaces.Box(np.array((-1., -1.)), np.array((1., 1.)))
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
 
     def step(self, action):
+        rescaled_action = np.array((action[0] * 0.1, action[1] * 4))
         h_action = self._pid_human.action(self.previous_obs)
-        multi_action = np.concatenate((h_action, action))
+        multi_action = np.concatenate((h_action, rescaled_action))
         obs, rew, done, debug = self.multi_env.step(multi_action)
         self.previous_obs = obs
         return obs, rew["R"], done, debug

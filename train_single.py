@@ -3,7 +3,6 @@ import wandb
 wandb.init(project="hr_adaptation", sync_tensorboard=True)
 import os
 import shutil
-import argparse
 import gin
 import gym
 import numpy as np
@@ -12,13 +11,22 @@ from stable_baselines import PPO2
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines.common.vec_env import SubprocVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
+from tensorflow import flags
+
+FLAGS = flags.FLAGS
+flags.DEFINE_string('name', None, 'Name of experiment')
+flags.DEFINE_multi_string(
+  'gin_file', "configs/ppo.gin", 'List of paths to the config files.')
+flags.DEFINE_multi_string(
+  'gin_param', None, 'Newline separated list of Gin parameter bindings.')
+flags.DEFINE_string("logdir", "/tmp/driving", "Logdir")
 
 PPO2 = gin.external_configurable(PPO2)
 VecNormalize = gin.external_configurable(VecNormalize)
 
 
 @gin.configurable
-def train(logdir, num_envs=1, experiment_name=gin.REQUIRED, timesteps=gin.REQUIRED):
+def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED):
     env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
     model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log=logdir)
     model.learn(total_timesteps=timesteps)
@@ -31,10 +39,8 @@ def train(logdir, num_envs=1, experiment_name=gin.REQUIRED, timesteps=gin.REQUIR
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("config", type=str)
-    parser.add_argument("--logdir", type=str, default="/tmp/driving")
-    args = parser.parse_args()
-    gin.parse_config_file(args.config)
-    wandb.save(args.config)
-    train(args.logdir)
+    flags.mark_flag_as_required("name")
+    gin.parse_config_files_and_bindings(FLAGS.gin_file, FLAGS.gin_param)
+    for gin_file in FLAGS.gin_file:
+        wandb.save(gin_file)
+    train(FLAGS.name, FLAGS.logdir)
