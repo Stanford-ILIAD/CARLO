@@ -136,8 +136,8 @@ class MergingEnv(gym.Env):
         self.world.reset()
         self.buildings = [
             Building(Point(28.5, 60), Point(57, 120), "gray80"),
-            Building(Point(91.5, 50), Point(57, 100), "gray80"),
-            Building(Point(90.5, 110), Point(59, 20), "gray80"),
+            Building(Point(91.5, 58), Point(57, 116), "gray80"),
+            Building(Point(90.5, 118), Point(59, 4), "gray80"),
         ]
         self.cars = {
             "H": Car(Point(58.5, 5), np.pi / 2),
@@ -149,8 +149,8 @@ class MergingEnv(gym.Env):
         # the concatenated state and action representation.
         self.world.add(self.cars["H"])
         self.world.add(self.cars["R"])
-        self.cars["H"].velocity = Point(0, 10)
-        self.cars["R"].velocity = Point(0, 10)
+        self.cars["H"].velocity = Point(0, 12)
+        self.cars["R"].velocity = Point(0, 12)
         self.car_milestones = {car_name: [] for car_name in self.cars}
         return self.world.state
 

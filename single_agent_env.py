@@ -54,7 +54,7 @@ class PidSingleEnv(gym.Env):
 
     def __init__(self, multi_env):
         self.multi_env = multi_env
-        self._pid_human = PidPolicy(multi_env.dt, 10, 2.0, 11)
+        self._pid_human = PidPolicy(multi_env.dt, 10, 2.0, 13)
         # self.action_space = spaces.Box(np.array((-0.1, -4.0)), np.array((0.1, 4.0)))
         self.action_space = spaces.Box(np.array((-1.0, -1.0)), np.array((1.0, 1.0)))
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
