@@ -14,11 +14,11 @@ from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 from tensorflow import flags
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string('name', None, 'Name of experiment')
+flags.DEFINE_string("name", None, "Name of experiment")
+flags.DEFINE_multi_string("gin_file", "configs/ppo.gin", "List of paths to the config files.")
 flags.DEFINE_multi_string(
-  'gin_file', "configs/ppo.gin", 'List of paths to the config files.')
-flags.DEFINE_multi_string(
-  'gin_param', None, 'Newline separated list of Gin parameter bindings.')
+    "gin_param", None, "Newline separated list of Gin parameter bindings."
+)
 flags.DEFINE_string("logdir", "/tmp/driving", "Logdir")
 
 PPO2 = gin.external_configurable(PPO2)
