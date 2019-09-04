@@ -1,7 +1,5 @@
 import math
-import time
 from typing import Tuple
-import pygame
 import gym
 from gym import spaces
 import driving_envs  # pylint: disable=unused-import
@@ -56,7 +54,6 @@ class PidSingleEnv(gym.Env):
 
     def __init__(self, multi_env):
         self.multi_env = multi_env
-        self._pid_human = PidPolicy(multi_env.dt, 10, 3.0, math.inf)
         self.action_space = spaces.Box(np.array((-1.0, -1.0)), np.array((1.0, 1.0)))
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
 
@@ -69,6 +66,8 @@ class PidSingleEnv(gym.Env):
         return obs, rew["R"], done, debug
 
     def reset(self):
+        max_acc = np.random.choice([2.3, 3.9])
+        self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, math.inf)
         obs = self.multi_env.reset()
         self.previous_obs = obs
         return obs
@@ -91,42 +90,3 @@ def get_action(car, click_pt):
     angle = -(np.pi / 2 - np.arctan2(vec[1], vec[0]))
     print(angle)
     return (angle, 1.0)
-
-
-LEFT_Y_AXIS = 1
-RIGHT_X_AXIS = 3
-
-def main():
-    pygame.init()
-    pygame.joystick.init()
-    joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
-    joystick = joysticks[0]
-    joystick.init()
-    env = make_single_env()
-    for _ in range(1):
-        done = False
-        obs = env.reset()
-        env.render()
-        episode_data = []
-        i = 0
-        ret = 0
-        print("Starting in 5!")
-        time.sleep(5)
-        while not done:
-            pygame.event.pump()
-            action = (-.3*joystick.get_axis(RIGHT_X_AXIS), -1*joystick.get_axis(LEFT_Y_AXIS))
-            next_obs, rew, done, debug = env.step(action)
-            ret += rew
-            del debug
-            episode_data.append((obs, action, rew, next_obs, done))
-            obs = next_obs
-            env.render()
-            time.sleep(env.multi_env.dt)
-            i += 1
-        print("i: {}, Return: {}".format(i, ret))
-    env.multi_env.world.close()
-    return
-
-
-if __name__ == "__main__":
-    main()
