@@ -8,7 +8,7 @@ import gym
 import numpy as np
 from single_agent_env import make_single_env
 from stable_baselines import PPO2
-from stable_baselines.common.policies import MlpPolicy
+from stable_baselines.common.policies import MlpPolicy, MlpLnLstmPolicy
 from stable_baselines.common.vec_env import SubprocVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 from tensorflow import flags
@@ -26,9 +26,10 @@ VecNormalize = gin.external_configurable(VecNormalize)
 
 
 @gin.configurable
-def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED):
+def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED, recurrent=False):
     env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
-    model = PPO2(MlpPolicy, env, verbose=1, tensorboard_log=logdir)
+    policy = MlpLnLstmPolicy if recurrent else MlpPolicy
+    model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
     model.learn(total_timesteps=timesteps)
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)
