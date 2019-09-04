@@ -1,6 +1,7 @@
 import math
 import time
 from typing import Tuple
+import pygame
 import gym
 from gym import spaces
 import driving_envs  # pylint: disable=unused-import
@@ -55,7 +56,7 @@ class PidSingleEnv(gym.Env):
 
     def __init__(self, multi_env):
         self.multi_env = multi_env
-        self._pid_human = PidPolicy(multi_env.dt, 10, 3.2, math.inf)
+        self._pid_human = PidPolicy(multi_env.dt, 10, 3.0, math.inf)
         self.action_space = spaces.Box(np.array((-1.0, -1.0)), np.array((1.0, 1.0)))
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
 
@@ -92,7 +93,15 @@ def get_action(car, click_pt):
     return (angle, 1.0)
 
 
+LEFT_Y_AXIS = 1
+RIGHT_X_AXIS = 3
+
 def main():
+    pygame.init()
+    pygame.joystick.init()
+    joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+    joystick = joysticks[0]
+    joystick.init()
     env = make_single_env()
     for _ in range(1):
         done = False
@@ -101,11 +110,11 @@ def main():
         episode_data = []
         i = 0
         ret = 0
+        print("Starting in 5!")
+        time.sleep(5)
         while not done:
-            action = (0.0, 1.0)
-            click_pt = env.multi_env.world.visualizer.win.checkMouse()
-            if click_pt is not None:
-                action = get_action(env.multi_env.cars["R"], click_pt)
+            pygame.event.pump()
+            action = (-.3*joystick.get_axis(RIGHT_X_AXIS), -1*joystick.get_axis(LEFT_Y_AXIS))
             next_obs, rew, done, debug = env.step(action)
             ret += rew
             del debug
