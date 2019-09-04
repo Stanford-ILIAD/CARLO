@@ -1,3 +1,4 @@
+import math
 import time
 from typing import Tuple
 import gym
@@ -30,7 +31,7 @@ class PidPolicy:
         # Assume that the agent is the Human.
         my_y, their_y = obs[1], obs[8]
         my_y_dot, their_y_dot = obs[3], obs[10]
-        if their_y > my_y:
+        if their_y > my_y + 2:
             target = their_y - self._target_dist
         else:
             target = their_y + self._target_dist
@@ -54,8 +55,7 @@ class PidSingleEnv(gym.Env):
 
     def __init__(self, multi_env):
         self.multi_env = multi_env
-        self._pid_human = PidPolicy(multi_env.dt, 10, 2.0, 13)
-        # self.action_space = spaces.Box(np.array((-0.1, -4.0)), np.array((0.1, 4.0)))
+        self._pid_human = PidPolicy(multi_env.dt, 10, 3.2, math.inf)
         self.action_space = spaces.Box(np.array((-1.0, -1.0)), np.array((1.0, 1.0)))
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
 
@@ -102,7 +102,7 @@ def main():
         i = 0
         ret = 0
         while not done:
-            action = (0.0, 3.0)
+            action = (0.0, 1.0)
             click_pt = env.multi_env.world.visualizer.win.checkMouse()
             if click_pt is not None:
                 action = get_action(env.multi_env.cars["R"], click_pt)

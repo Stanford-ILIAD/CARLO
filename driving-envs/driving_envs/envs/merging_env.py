@@ -1,5 +1,6 @@
 import math
 from typing import Dict, Text, Tuple
+import gin
 import gym
 import numpy as np
 from driving_envs.world import World
@@ -88,14 +89,22 @@ class TurningEnv(gym.Env):
         self.world.render()
 
 
+@gin.configurable
 class MergingEnv(gym.Env):
     """Driving gym interface."""
 
-    def __init__(self, dt: float = 0.04, width: int = 120, height: int = 120):
+    def __init__(
+        self,
+        dt: float = 0.04,
+        width: int = 120,
+        height: int = 120,
+        ctrl_cost_weight: float = .01,
+    ):
         super(MergingEnv, self).__init__()
         self.dt, self.width, self.height = dt, width, height
         self.world = World(self.dt, width=width, height=height, ppm=6)
         self.buildings, self.cars = [], {}
+        self._ctrl_cost_weight = ctrl_cost_weight
 
     def step(self, action: np.ndarray):
         offset = 0
@@ -127,10 +136,9 @@ class MergingEnv(gym.Env):
 
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
-        # vel_rew = car.velocity.y
         dist_rew = -0.008 * (121 - car.y)
         control_cost = np.square(car.inputAcceleration)
-        return dist_rew - 0.0 * control_cost
+        return dist_rew - self._ctrl_cost_weight * control_cost
 
     def reset(self):
         self.world.reset()
@@ -149,8 +157,8 @@ class MergingEnv(gym.Env):
         # the concatenated state and action representation.
         self.world.add(self.cars["H"])
         self.world.add(self.cars["R"])
-        self.cars["H"].velocity = Point(0, 12)
-        self.cars["R"].velocity = Point(0, 12)
+        self.cars["H"].velocity = Point(0, 10)
+        self.cars["R"].velocity = Point(0, 10)
         self.car_milestones = {car_name: [] for car_name in self.cars}
         return self.world.state
 
