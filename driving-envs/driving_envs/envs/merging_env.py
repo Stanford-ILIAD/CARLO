@@ -97,7 +97,7 @@ class MergingEnv(gym.Env):
         dt: float = 0.04,
         width: int = 120,
         height: int = 120,
-        ctrl_cost_weight: float = .01,
+        ctrl_cost_weight: float = .0,
     ):
         super(MergingEnv, self).__init__()
         self.dt, self.width, self.height = dt, width, height
