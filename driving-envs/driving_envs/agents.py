@@ -34,8 +34,7 @@ class Pedestrian(CircleEntity):
 
 
 class Building(RectangleEntity):
-    def __init__(self, center: Point, size: Point, color: str = "gray26"):
-        heading = 0.0
+    def __init__(self, center: Point, size: Point, color: str = "gray26", heading=0.0):
         movable = False
         friction = 0.0
         super(Building, self).__init__(center, heading, size, movable, friction)

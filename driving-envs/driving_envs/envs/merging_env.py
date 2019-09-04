@@ -136,8 +136,8 @@ class MergingEnv(gym.Env):
         self.world.reset()
         self.buildings = [
             Building(Point(28.5, 60), Point(57, 120), "gray80"),
-            Building(Point(91.5, 58), Point(57, 116), "gray80"),
-            Building(Point(90.5, 118), Point(59, 4), "gray80"),
+            Building(Point(66.7, 115.9), Point(10, 10.19), "gray80", heading=0.1974),
+            Building(Point(91.5, 60), Point(57, 120), "gray80"),
         ]
         self.cars = {
             "H": Car(Point(58.5, 5), np.pi / 2),
