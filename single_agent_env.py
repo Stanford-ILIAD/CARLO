@@ -1,5 +1,6 @@
 import math
 from typing import Tuple
+import gin
 import gym
 from gym import spaces
 import driving_envs  # pylint: disable=unused-import
@@ -49,12 +50,14 @@ class PidPolicy:
         self.errors = []
 
 
+@gin.configurable
 class PidSingleEnv(gym.Env):
     """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
 
-    def __init__(self, multi_env, discrete: bool = False):
+    def __init__(self, multi_env, discrete: bool = False, human_max_accs = [2.3, 3.5]):
         self.multi_env = multi_env
         self.discrete = discrete
+        self.human_max_accs = human_max_accs
         if discrete:
             self.num_bins = (21, 21)
             self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
@@ -75,7 +78,7 @@ class PidSingleEnv(gym.Env):
         return obs, rew["R"], done, debug
 
     def reset(self):
-        max_acc = np.random.choice([2.3, 3.9])
+        max_acc = np.random.choice(self.human_max_accs)
         self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, math.inf)
         obs = self.multi_env.reset()
         self.previous_obs = obs
