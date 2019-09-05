@@ -28,7 +28,6 @@ VecNormalize = gin.external_configurable(VecNormalize)
 @gin.configurable
 def train(experiment_name, logdir, timesteps=gin.REQUIRED):
     env = VecNormalize(DummyVecEnv([lambda: make_single_env(discrete=True)]))
-    import ipdb; ipdb.set_trace()
     model = DQN(LnMlpPolicy, env, verbose=1, tensorboard_log=logdir)
     model.learn(total_timesteps=timesteps)
     if os.path.exists(experiment_name):
