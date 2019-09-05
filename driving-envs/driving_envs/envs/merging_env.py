@@ -98,14 +98,17 @@ class MergingEnv(gym.Env):
         width: int = 120,
         height: int = 120,
         ctrl_cost_weight: float = 0.0,
+        time_limit: int = 200
     ):
         super(MergingEnv, self).__init__()
         self.dt, self.width, self.height = dt, width, height
         self.world = World(self.dt, width=width, height=height, ppm=6)
         self.buildings, self.cars = [], {}
         self._ctrl_cost_weight = ctrl_cost_weight
+        self.time_limit = time_limit
 
     def step(self, action: np.ndarray):
+        self.step_num += 1
         offset = 0
         for agent in self.world.dynamic_agents:
             agent.set_control(*action[offset : offset + 2])
@@ -115,6 +118,8 @@ class MergingEnv(gym.Env):
         reward = {name: self._get_car_reward(name) for name in self.cars.keys()}
         if self.cars["R"].collidesWith(self.cars["H"]):
             done = True
+            reward["H"] -= 2 * (120 - self.cars["H"].y)
+            reward["R"] -= 2 * (120 - self.cars["R"].y)
         for car_name, car in self.cars.items():
             for i in range(len(self.car_milestones[car_name])):
                 milestone = self.car_milestones[car_name][i]
@@ -124,13 +129,14 @@ class MergingEnv(gym.Env):
             for building in self.buildings:
                 if car.collidesWith(building):
                     done = True
+                    reward[car_name] -= 2 * (120 - car.y)
             if car_name == "R" and car.y >= self.height or car.y <= 0:
                 done = True
+        if self.step_num >= self.time_limit:
+            done = True
         if done:
             for car_name, car in self.cars.items():
-                reward[car_name] -= 2 * (120 - car.y)
-                if car.y >= self.height:
-                    reward[car_name] += 200
+                reward[car_name] += 200 - 1.8 * (self.height - car.y)
         return self.world.state, reward, done, {}
 
     def _get_car_reward(self, name: Text):
@@ -161,6 +167,7 @@ class MergingEnv(gym.Env):
         self.cars["H"].velocity = Point(0, 10)
         self.cars["R"].velocity = Point(0, 10)
         self.car_milestones = {car_name: [] for car_name in self.cars}
+        self.step_num = 0
         return self.world.state
 
     def render(self, mode="human"):
