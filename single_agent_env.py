@@ -1,3 +1,4 @@
+import itertools
 import math
 from typing import Tuple
 import gin
@@ -59,9 +60,11 @@ class PidSingleEnv(gym.Env):
         self.discrete = discrete
         self.human_max_accs = human_max_accs
         if discrete:
-            self.num_bins = (21, 21)
+            self.num_bins = (11, 11)
             self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
-            self.action_space = spaces.MultiDiscrete(list(self.num_bins))
+            # self.action_space = spaces.MultiDiscrete(list(self.num_bins))
+            self.action_space = spaces.Discrete(int(np.prod(self.num_bins)))
+            self.int_to_tuple = list(itertools.product(*[range(x) for x in self.num_bins]))
             self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
         else:
             self.action_space = spaces.Box(np.array((-1.0, -1.0)), np.array((1.0, 1.0)))
@@ -69,6 +72,7 @@ class PidSingleEnv(gym.Env):
 
     def step(self, action):
         if self.discrete:
+            action = self.int_to_tuple[action]
             action = np.array([self.binner[i][a] for i, a in enumerate(action)])
         processed_action = np.array((action[0] * 0.1, action[1] * 4))
         h_action = self._pid_human.action(self.previous_obs)

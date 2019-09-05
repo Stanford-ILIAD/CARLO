@@ -1,0 +1,6 @@
+train.timesteps = 100000
+DQN.gamma = 0.995
+DQN.buffer_size = 100000
+DQN.exploration_fraction = 0.1
+DQN.target_network_update_freq = 100
+VecNormalize.norm_reward = False
