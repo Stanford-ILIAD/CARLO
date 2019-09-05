@@ -80,13 +80,3 @@ def make_single_env():
     multi_env = gym.make("Merging-v0")
     env = PidSingleEnv(multi_env)
     return env
-
-
-def get_action(car, click_pt):
-    # TODO(allanz): Should use setCoords but somehow the visualizer
-    # is not using transform.screen() properly (internal bug).
-    x, y = Transform(720, 720, 0, 0, 120, 120).world(click_pt.x, click_pt.y)
-    vec = np.array((x - car.x, y - car.y))
-    angle = -(np.pi / 2 - np.arctan2(vec[1], vec[0]))
-    print(angle)
-    return (angle, 1.0)
