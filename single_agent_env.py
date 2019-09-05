@@ -55,14 +55,13 @@ class PidPolicy:
 class PidSingleEnv(gym.Env):
     """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
 
-    def __init__(self, multi_env, discrete: bool = False, human_max_accs = [2.3, 3.5]):
+    def __init__(self, multi_env, discrete: bool = False, human_max_accs=[2.3, 3.5]):
         self.multi_env = multi_env
         self.discrete = discrete
         self.human_max_accs = human_max_accs
         if discrete:
             self.num_bins = (11, 11)
             self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
-            # self.action_space = spaces.MultiDiscrete(list(self.num_bins))
             self.action_space = spaces.Discrete(int(np.prod(self.num_bins)))
             self.int_to_tuple = list(itertools.product(*[range(x) for x in self.num_bins]))
             self.observation_space = spaces.Box(-np.inf, np.inf, shape=(14,))
@@ -83,7 +82,8 @@ class PidSingleEnv(gym.Env):
 
     def reset(self):
         max_acc = np.random.choice(self.human_max_accs)
-        self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, math.inf)
+        max_vel = {2.3: 12, 3.5: 15}[max_acc]
+        self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, max_vel)
         obs = self.multi_env.reset()
         self.previous_obs = obs
         return obs

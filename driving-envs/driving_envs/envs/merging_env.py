@@ -118,20 +118,12 @@ class MergingEnv(gym.Env):
         reward = {name: self._get_car_reward(name) for name in self.cars.keys()}
         if self.cars["R"].collidesWith(self.cars["H"]):
             done = True
-            # reward["H"] -= 2 * (120 - self.cars["H"].y) + 10
-            # reward["R"] -= 2 * (120 - self.cars["R"].y) + 10
             reward["H"] -= 200
             reward["R"] -= 200
         for car_name, car in self.cars.items():
-            for i in range(len(self.car_milestones[car_name])):
-                milestone = self.car_milestones[car_name][i]
-                if car.y > milestone:
-                    reward[car_name] += 20 * (i + 1)
-                    self.car_milestones[car_name][i] = math.inf
             for building in self.buildings:
                 if car.collidesWith(building):
                     done = True
-                    # reward[car_name] -= 2 * (120 - car.y) + 10
                     reward[car_name] -= 200
             if car_name == "R" and car.y >= self.height or car.y <= 0:
                 done = True
@@ -139,14 +131,13 @@ class MergingEnv(gym.Env):
             done = True
         if done:
             for car_name, car in self.cars.items():
-                reward[car_name] += 200*(car.y/120)**4
+                reward[car_name] += 200*((car.y/self.height)**4)
         return self.world.state, reward, done, {}
 
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
-        dist_rew = -0.008 * (121 - car.y)
-        right_lane_scaling = np.square(1 - (120 - car.y) / 120)
-        right_lane_cost = 0.1 * right_lane_scaling * np.abs(car.x - 58.5)
+        dist_rew = -0.008 * (self.height - car.y)
+        right_lane_cost = 0.01 * np.abs(car.x - 58.5)
         control_cost = np.square(car.inputAcceleration)
         return dist_rew - right_lane_cost - self._ctrl_cost_weight * control_cost
 
@@ -169,7 +160,6 @@ class MergingEnv(gym.Env):
         self.world.add(self.cars["R"])
         self.cars["H"].velocity = Point(0, 10)
         self.cars["R"].velocity = Point(0, 10)
-        self.car_milestones = {car_name: [] for car_name in self.cars}
         self.step_num = 0
         return self.world.state
 
