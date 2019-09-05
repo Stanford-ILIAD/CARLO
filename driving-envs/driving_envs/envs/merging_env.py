@@ -136,7 +136,7 @@ class MergingEnv(gym.Env):
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
         dist_rew = -0.008 * (121 - car.y)
-        right_lane_scaling = .3 * np.square(1 - (120 - car.y) / 120)
+        right_lane_scaling = np.square(1 - (120 - car.y) / 120)
         right_lane_cost = right_lane_scaling * np.abs(car.x - 58.5)
         control_cost = np.square(car.inputAcceleration)
         return dist_rew - right_lane_cost - self._ctrl_cost_weight * control_cost
@@ -145,7 +145,7 @@ class MergingEnv(gym.Env):
         self.world.reset()
         self.buildings = [
             Building(Point(28.5, 60), Point(57, 120), "gray80"),
-            Building(Point(66.7, 115.9), Point(10, 10.19), "gray80", heading=0.1974),
+            # Building(Point(66.7, 115.9), Point(10, 10.19), "gray80", heading=0.1974),
             Building(Point(91.5, 60), Point(57, 120), "gray80"),
         ]
         self.cars = {
