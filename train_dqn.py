@@ -93,13 +93,14 @@ class QNetwork(nn.Module):
         self.use_recurrent = use_recurrent
         self.factored = factored
 
-        self.fc_layers = []
+        fc_layers = []
         prev_out_size = input_size[0]
         for _ in range(num_fc_layers):
-            self.fc_layers.append(
+            fc_layers.append(
                 nn.Linear(in_features=prev_out_size, out_features=self.rnn_hidden_size)
             )
             prev_out_size = self.rnn_hidden_size
+        self.fc_net = nn.Sequential(*fc_layers)
         self.rnn = None
         if self.use_recurrent:
             self.rnn = nn.GRU(
@@ -122,9 +123,8 @@ class QNetwork(nn.Module):
     ):  # pylint: disable=arguments-differ
         obs_shape = tuple(obs.size())  # (N, T, K)
         bsize, length = obs_shape[0], obs_shape[1]
-        features = obs.view(bsize * length, -1)  # (N * T, -1)
-        for fc_layer in self.fc_layers:
-            features = fc_layer(features)  # (N * T, -1)
+        obs = obs.view(bsize * length, -1)  # (N * T, -1)
+        features = self.fc_net(obs)  # (N * T, -1)
         rnn_hidden = None
         if self.use_recurrent:
             features = features.view(bsize, length, -1)  # (N, T, -1)
