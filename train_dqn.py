@@ -4,6 +4,7 @@ import random
 import shutil
 import time
 from typing import List, Optional, Sequence, Union, NamedTuple, Tuple
+from absl import app, flags
 import gin
 import gym
 import numpy as np
@@ -12,7 +13,6 @@ from torch import from_numpy
 from torch import nn
 import wandb
 from single_agent_env import make_single_env
-from absl import app, flags
 
 FLAGS = flags.FLAGS
 flags.DEFINE_multi_string("gin_file", None, "List of paths to the config files.")
@@ -45,9 +45,10 @@ class VariableLenTransitionBatch(NamedTuple):
 class ReplayBuffer:
     """Episode-based replay buffer."""
 
-    def __init__(self, memsize: int = 1000):
+    def __init__(self, memsize: int = 1000, max_length=None):
         self.memsize = memsize
         self.memory: Sequence[Transition] = deque(maxlen=self.memsize)
+        self.max_length = max_length
 
     def add_episode(self, episode: Transition):
         """Add an episode to the replay buffer."""
@@ -56,9 +57,23 @@ class ReplayBuffer:
     def get_batch(self, bsize: int) -> VariableLenTransitionBatch:
         """Get bsize episodes."""
         sampled_episodes: Sequence[Transition] = random.sample(self.memory, bsize)
-        return VariableLenTransitionBatch(*zip(*sampled_episodes))
+        if self.max_length is not None:
+            cut_episodes = []
+            for episode in sampled_episodes:
+                length = episode.obs.shape[0]
+                if length > self.max_length:
+                    point = np.random.randint(0, length + 1 - self.max_length)
+                    cut_episodes.append(
+                        Transition(*(d[point : point + self.max_length] for d in episode))
+                    )
+                else:
+                    cut_episodes.append(episode)
+        else:
+            cut_episodes = sampled_episodes
+        return VariableLenTransitionBatch(*zip(*cut_episodes))
 
 
+@gin.configurable
 class QNetwork(nn.Module):
     """Represents a recurrent q-function."""
 
@@ -68,14 +83,23 @@ class QNetwork(nn.Module):
         out_size: int,
         rnn_hidden_size: int = 128,
         use_recurrent: bool = True,
+        num_fc_layers: int = 1,
+        factored: bool = False,
     ):
         super(QNetwork, self).__init__()
         self.input_size = input_size
         self.out_size = out_size
         self.rnn_hidden_size = rnn_hidden_size
         self.use_recurrent = use_recurrent
+        self.factored = factored
 
-        self.fc1 = nn.Linear(in_features=input_size[0], out_features=self.rnn_hidden_size)
+        self.fc_layers = []
+        prev_out_size = input_size[0]
+        for _ in range(num_fc_layers):
+            self.fc_layers.append(
+                nn.Linear(in_features=prev_out_size, out_features=self.rnn_hidden_size)
+            )
+            prev_out_size = self.rnn_hidden_size
         self.rnn = None
         if self.use_recurrent:
             self.rnn = nn.GRU(
@@ -83,7 +107,13 @@ class QNetwork(nn.Module):
                 hidden_size=self.rnn_hidden_size,
                 batch_first=True,
             )
-        self.adv = nn.Linear(in_features=self.rnn_hidden_size, out_features=self.out_size)
+        if factored:
+            bins_per_dim = int(np.sqrt(self.out_size))
+            assert bins_per_dim == 11, "Should be 11 bins per dimension."
+            self.adv1 = nn.Linear(in_features=self.rnn_hidden_size, out_features=bins_per_dim)
+            self.adv2 = nn.Linear(in_features=self.rnn_hidden_size, out_features=bins_per_dim)
+        else:
+            self.adv = nn.Linear(in_features=self.rnn_hidden_size, out_features=self.out_size)
         self.val = nn.Linear(in_features=self.rnn_hidden_size, out_features=1)
         self.relu = nn.ReLU()
 
@@ -92,8 +122,9 @@ class QNetwork(nn.Module):
     ):  # pylint: disable=arguments-differ
         obs_shape = tuple(obs.size())  # (N, T, K)
         bsize, length = obs_shape[0], obs_shape[1]
-        obs = obs.view(bsize * length, -1)  # (N * T, -1)
-        features = self.fc1(obs)  # (N * T, -1)
+        features = obs.view(bsize * length, -1)  # (N * T, -1)
+        for fc_layer in self.fc_layers:
+            features = fc_layer(features)  # (N * T, -1)
         rnn_hidden = None
         if self.use_recurrent:
             features = features.view(bsize, length, -1)  # (N, T, -1)
@@ -108,7 +139,11 @@ class QNetwork(nn.Module):
             rnn_out = torch.reshape(rnn_out, (-1, rnn_out.size()[-1]))  # (N * T, -1)
         else:
             rnn_out = features
-        adv_out = self.adv(rnn_out)  # (N * T, num_actions)
+        if self.factored:
+            adv_out = self.adv1(rnn_out)[..., None] + self.adv2(rnn_out)[..., None, :]
+            adv_out = adv_out.view(bsize * length, -1)
+        else:
+            adv_out = self.adv(rnn_out)  # (N * T, num_actions)
         val_out = self.val(rnn_out)  # (N * T, 1)
         q_out = adv_out + val_out  # (N * T, num_actions)
         q_out = adv_out
