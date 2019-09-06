@@ -41,10 +41,11 @@ class VariableLenTransitionBatch(NamedTuple):
     done: Tuple[Union[np.ndarray, bool]]
 
 
+@gin.configurable
 class ReplayBuffer:
     """Episode-based replay buffer."""
 
-    def __init__(self, memsize: int = 100000):
+    def __init__(self, memsize: int = 1000):
         self.memsize = memsize
         self.memory: Sequence[Transition] = deque(maxlen=self.memsize)
 
@@ -182,8 +183,8 @@ def collect_episode(
 def compute_epsilon(
     training_progress: float,
     initial_epsilon: float = 1.0,
-    final_epsilon: float = 0.01,
-    explore_time_ratio: float = 0.5,
+    final_epsilon: float = 0.0,
+    explore_time_ratio: float = 0.1,
 ) -> float:
     """Calculates the current epsilon according to linear decay schedule."""
     m = (final_epsilon - initial_epsilon) / explore_time_ratio
@@ -256,7 +257,7 @@ def eval_policy(env: gym.Env, policy: Policy, eval_episodes: int):
 @gin.configurable
 def train(
     save_freq: int = 200,
-    num_training_iterations: int = 50000,
+    num_training_iterations: int = 5000,
     init_collect_eps: int = 100,
     learning_rate: float = 0.00025,
     train_freq: int = 1,
