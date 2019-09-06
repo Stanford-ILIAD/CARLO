@@ -304,8 +304,6 @@ def train(
             last_time = time.time()
             log_dict.update({"steps_per_sec": steps_per_sec})
             print("{:d}:\tSteps/sec:\t{:.1f}".format(i, steps_per_sec))
-        import ipdb
-
         if i % save_freq == 0:
             filename = "dqn_out/model{}".format(i)
             torch.save(q_net.state_dict(), filename)
