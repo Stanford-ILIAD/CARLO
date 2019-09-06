@@ -12,6 +12,13 @@ from torch import from_numpy
 from torch import nn
 import wandb
 from single_agent_env import make_single_env
+from absl import app, flags
+
+FLAGS = flags.FLAGS
+flags.DEFINE_multi_string("gin_file", None, "List of paths to the config files.")
+flags.DEFINE_multi_string(
+    "gin_param", None, "Newline separated list of Gin parameter bindings."
+)
 
 
 class Transition(NamedTuple):
@@ -171,11 +178,12 @@ def collect_episode(
     return transitions
 
 
+@gin.configurable
 def compute_epsilon(
     training_progress: float,
     initial_epsilon: float = 1.0,
     final_epsilon: float = 0.01,
-    explore_time_ratio: float = 1.0,
+    explore_time_ratio: float = 0.5,
 ) -> float:
     """Calculates the current epsilon according to linear decay schedule."""
     m = (final_epsilon - initial_epsilon) / explore_time_ratio
@@ -246,7 +254,7 @@ def eval_policy(env: gym.Env, policy: Policy, eval_episodes: int):
 
 
 @gin.configurable
-def main(
+def train(
     save_freq: int = 200,
     num_training_iterations: int = 50000,
     init_collect_eps: int = 100,
@@ -296,10 +304,19 @@ def main(
             last_time = time.time()
             log_dict.update({"steps_per_sec": steps_per_sec})
             print("{:d}:\tSteps/sec:\t{:.1f}".format(i, steps_per_sec))
+        import ipdb
+
         if i % save_freq == 0:
-            torch.save(q_net.state_dict(), "dqn_out/model{}".format(i))
+            filename = "dqn_out/model{}".format(i)
+            torch.save(q_net.state_dict(), filename)
+            wandb.save(filename)
         wandb.log(log_dict, step=i)
 
 
+def main(_):
+    gin.parse_config_files_and_bindings(FLAGS.gin_file, FLAGS.gin_param)
+    train()
+
+
 if __name__ == "__main__":
-    main()
+    app.run(main)
