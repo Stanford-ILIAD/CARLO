@@ -276,6 +276,7 @@ def train(
     q_net = QNetwork(env.observation_space.shape, env.action_space.n).to(device)
     q_target_net = QNetwork(env.observation_space.shape, env.action_space.n).to(device)
     td_error_module = TdError(q_net, q_target_net, gamma).to(device)
+    wandb.watch(td_error_module)
     optimizer = torch.optim.Adam(q_net.parameters(), lr=learning_rate)
     q_target_net.load_state_dict(q_net.state_dict())
     random_policy = RandomPolicy()
