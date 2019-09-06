@@ -1,0 +1,4 @@
+ReplayBuffer.memsize = 500
+compute_epsilon.final_epsilon = 0.2
+train.num_training_iterations = 20000
+PidSingleEnv.human_max_accs=[2.3]
