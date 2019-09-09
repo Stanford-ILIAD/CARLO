@@ -1,5 +1,7 @@
 ReplayBuffer.memsize = 500
 ReplayBuffer.max_length = 50
-compute_epsilon.final_epsilon = 0.02
+compute_epsilon.final_epsilon = 0.
 train.num_training_iterations = 20000
 PidSingleEnv.human_max_accs=[2.3]
+QNetwork.factored = True
+QNetwork.num_fc_layers = 2

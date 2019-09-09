@@ -307,6 +307,9 @@ def train(
         shutil.rmtree("dqn_out")
     os.makedirs("dqn_out")
     wandb.init(project="hr-adaptation")
+    with open("dqn_out/operative_config.gin", "w") as f:
+        f.write(gin.operative_config_str())
+        wandb.save("dqn_out/operative_config.gin")
     env = make_single_env(discrete=True)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     q_net = QNetwork(env.observation_space.shape, env.action_space.n).to(device)
