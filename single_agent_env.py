@@ -1,5 +1,6 @@
 import itertools
 import math
+import time
 from typing import Tuple
 import gin
 import gym
@@ -92,7 +93,30 @@ class PidSingleEnv(gym.Env):
         return self.multi_env.render(mode=mode)
 
 
-def make_single_env(discrete=False):
-    multi_env = gym.make("Merging-v0")
+@gin.configurable
+def make_single_env(name="Merging-v1", discrete=False):
+    multi_env = gym.make(name)
     env = PidSingleEnv(multi_env, discrete=discrete)
     return env
+
+
+if __name__ == "__main__":
+    env = make_single_env(name="Merging-v1")
+    done = False
+    obs = env.reset()
+    env.render()
+    episode_data = []
+    i = 0
+    ret = 0
+    while not done:
+        action = (0, 4)
+        next_obs, rew, done, debug = env.step(action)
+        ret += rew
+        del debug
+        episode_data.append((obs, action, rew, next_obs, done))
+        obs = next_obs
+        env.render()
+        time.sleep(env.multi_env.dt)
+        i += 1
+    print("i: {}, Return: {}".format(i, ret))
+    env.multi_env.world.close()
