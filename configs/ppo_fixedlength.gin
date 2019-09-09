@@ -1,8 +1,0 @@
-make_single_env.name = "Merging-v1"
-train.num_envs = 2
-train.timesteps = 500000
-PPO2.gamma = 0.995
-PPO2.n_steps = 300
-PPO2.ent_coef = 1e-2
-VecNormalize.norm_reward = False
-PidSingleEnv.human_max_accs = [3.5]
