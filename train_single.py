@@ -27,14 +27,17 @@ VecNormalize = gin.external_configurable(VecNormalize)
 
 @gin.configurable
 def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED, recurrent=False):
+    if os.path.exists(experiment_name):
+        shutil.rmtree(experiment_name)
+    os.makedirs(experiment_name)
+    op_config_path = os.path.join(experiment_name, "operative_config.gin")
+    with open(op_config_path, "w") as f:
+        f.write(gin.operative_config_str())
+        wandb.save(op_config_path)
     env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
     policy = MlpLnLstmPolicy if recurrent else MlpPolicy
     model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
     model.learn(total_timesteps=timesteps)
-    if os.path.exists(experiment_name):
-        shutil.rmtree(experiment_name)
-    os.makedirs(experiment_name)
-    model.save(os.path.join(experiment_name, "model"))
     env.save_running_average(experiment_name)
     wandb.save(os.path.join(experiment_name, "*.pkl"))
 
@@ -42,6 +45,4 @@ def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED, recurrent
 if __name__ == "__main__":
     flags.mark_flag_as_required("name")
     gin.parse_config_files_and_bindings(FLAGS.gin_file, FLAGS.gin_param)
-    for gin_file in FLAGS.gin_file:
-        wandb.save(gin_file)
     train(FLAGS.name, FLAGS.logdir)
