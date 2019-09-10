@@ -38,6 +38,7 @@ def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED, recurrent
         f.write(gin.operative_config_str())
         wandb.save(op_config_path)
     model.learn(total_timesteps=timesteps)
+    model.save(os.path.join(experiment_name, "model"))
     env.save_running_average(experiment_name)
     wandb.save(os.path.join(experiment_name, "*.pkl"))
 
