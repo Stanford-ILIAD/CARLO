@@ -78,9 +78,9 @@ def train(
 
     def callback(_locals, _globals):
         nonlocal n_steps, best_mean
-        start_eval_time = time.time()
         model = _locals["self"]
         if (n_steps + 1) % eval_save_period == 0:
+            start_eval_time = time.time()
             eval_dir = os.path.join(experiment_name, "eval{}".format(n_steps))
             os.makedirs(eval_dir)
             avg_ret = evaluate(model, eval_dir)
@@ -91,9 +91,9 @@ def train(
                 best_mean = avg_ret
                 shutil.rmtree(best_dir)
                 shutil.copytree(eval_dir, best_dir)
+            end_eval_time = time.time() - start_eval_time
+            print("Finished evaluation in {:.2f} seconds".format(end_eval_time))
         n_steps += 1
-        end_eval_time = time.time() - start_eval_time
-        print("Finished evaluation in {:.2f} seconds".format(end_eval_time))
         return True
 
     model.learn(total_timesteps=timesteps, callback=callback)
