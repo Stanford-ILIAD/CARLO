@@ -1,5 +1,6 @@
 """Train with PPO."""
 
+from functools import partial
 import os
 import shutil
 import time
@@ -45,7 +46,7 @@ def train(
     wandb.save(experiment_name)
     env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
     max_accs = np.linspace(2, 4, num=num_envs).tolist()
-    eval_env_fns = [lambda: make_single_env(human_max_accs=[max_acc]) for max_acc in max_accs]
+    eval_env_fns = [partial(make_single_env, human_max_accs=[max_acc]) for max_acc in max_accs]
     eval_env = VecNormalize(DummyVecEnv(eval_env_fns), training=False)
     policy = MlpLnLstmPolicy if recurrent else MlpPolicy
     model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
