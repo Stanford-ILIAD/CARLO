@@ -30,13 +30,13 @@ def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED, recurrent
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)
     os.makedirs(experiment_name)
+    env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
+    policy = MlpLnLstmPolicy if recurrent else MlpPolicy
+    model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
     op_config_path = os.path.join(experiment_name, "operative_config.gin")
     with open(op_config_path, "w") as f:
         f.write(gin.operative_config_str())
         wandb.save(op_config_path)
-    env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
-    policy = MlpLnLstmPolicy if recurrent else MlpPolicy
-    model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
     model.learn(total_timesteps=timesteps)
     env.save_running_average(experiment_name)
     wandb.save(os.path.join(experiment_name, "*.pkl"))
