@@ -1,12 +1,11 @@
 import itertools
 import math
 import time
-from typing import Tuple
+from typing import List, Optional, Tuple
 import gin
 import gym
 from gym import spaces
 import driving_envs  # pylint: disable=unused-import
-from driving_envs.graphics import Transform
 import numpy as np
 
 
@@ -56,9 +55,13 @@ class PidPolicy:
 class PidSingleEnv(gym.Env):
     """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
 
-    def __init__(self, multi_env, discrete: bool = False, human_max_accs=[2.3, 3.5]):
+    def __init__(
+        self, multi_env, discrete: bool = False, human_max_accs: Optional[List[float]] = None
+    ):
         self.multi_env = multi_env
         self.discrete = discrete
+        if human_max_accs is None:
+            human_max_accs = np.linspace(2, 4, num=10).tolist()
         self.human_max_accs = human_max_accs
         if discrete:
             self.num_bins = (11, 11)
@@ -83,8 +86,7 @@ class PidSingleEnv(gym.Env):
 
     def reset(self):
         max_acc = np.random.choice(self.human_max_accs)
-        max_vel = {2.3: 12, 3.5: 15}[max_acc]
-        self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, max_vel)
+        self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, np.inf)
         obs = self.multi_env.reset()
         self.previous_obs = obs
         return obs
@@ -94,13 +96,13 @@ class PidSingleEnv(gym.Env):
 
 
 @gin.configurable
-def make_single_env(name="Merging-v1", discrete=False):
+def make_single_env(name="Merging-v1", **kwargs):
     multi_env = gym.make(name)
-    env = PidSingleEnv(multi_env, discrete=discrete)
+    env = PidSingleEnv(multi_env, **kwargs)
     return env
 
 
-if __name__ == "__main__":
+def main():
     env = make_single_env(name="Merging-v1")
     done = False
     obs = env.reset()
@@ -120,3 +122,7 @@ if __name__ == "__main__":
         i += 1
     print("i: {}, Return: {}".format(i, ret))
     env.multi_env.world.close()
+
+
+if __name__ == "__main__":
+    main()

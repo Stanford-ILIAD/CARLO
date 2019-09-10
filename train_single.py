@@ -1,17 +1,18 @@
-import wandb
+"""Train with PPO."""
 
-wandb.init(project="hr_adaptation", sync_tensorboard=True)
 import os
 import shutil
+import time
 import gin
-import gym
+from moviepy.editor import ImageSequenceClip
 import numpy as np
-from single_agent_env import make_single_env
 from stable_baselines import PPO2
 from stable_baselines.common.policies import MlpPolicy, MlpLnLstmPolicy
-from stable_baselines.common.vec_env import SubprocVecEnv
+from stable_baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 from tensorflow import flags
+import wandb
+from single_agent_env import make_single_env
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("name", None, "Name of experiment")
@@ -26,24 +27,81 @@ VecNormalize = gin.external_configurable(VecNormalize)
 
 
 @gin.configurable
-def train(experiment_name, logdir, num_envs=1, timesteps=gin.REQUIRED, recurrent=False):
+def train(
+    experiment_name,
+    logdir,
+    num_envs=1,
+    timesteps=gin.REQUIRED,
+    recurrent=False,
+    eval_save_period=100,
+):
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)
     os.makedirs(experiment_name)
+    best_dir = os.path.join(experiment_name, "best")
+    final_dir = os.path.join(experiment_name, "final")
+    os.makedirs(best_dir)
+    os.makedirs(final_dir)
+    wandb.save(experiment_name)
     env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
+    max_accs = np.linspace(2, 4, num=num_envs).tolist()
+    eval_env_fns = [lambda: make_single_env(human_max_accs=[max_acc]) for max_acc in max_accs]
+    eval_env = VecNormalize(DummyVecEnv(eval_env_fns), training=False)
     policy = MlpLnLstmPolicy if recurrent else MlpPolicy
     model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
     op_config_path = os.path.join(experiment_name, "operative_config.gin")
     with open(op_config_path, "w") as f:
         f.write(gin.operative_config_str())
-        wandb.save(op_config_path)
-    model.learn(total_timesteps=timesteps)
-    model.save(os.path.join(experiment_name, "model"))
-    env.save_running_average(experiment_name)
-    wandb.save(os.path.join(experiment_name, "*.pkl"))
+    n_steps, best_mean = 0, -np.inf  # pylint: disable=unused-variable
+
+    def evaluate(model, eval_dir):
+        # Need to transfer running avgs from env->eval_env
+        model.save(os.path.join(eval_dir, "model.pkl"))
+        env.save_running_average(eval_dir)
+        eval_env.load_running_average(eval_dir)
+        obs = eval_env.reset()
+        imgs = []
+        imgs.append(eval_env.get_images())
+        dones = np.array([False])
+        rets = 0
+        while not np.all(dones):
+            action, _states = model.predict(obs, deterministic=True)
+            next_obs, rewards, dones, _ = eval_env.step(action)
+            rets += rewards
+            imgs.append(eval_env.get_images())
+            obs = next_obs
+        avg_ret = np.mean(rets)
+        for i in range(num_envs):
+            clip = ImageSequenceClip([img[i] for img in imgs], fps=25)
+            clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
+        return avg_ret
+
+    def callback(_locals, _globals):
+        nonlocal n_steps, best_mean
+        start_eval_time = time.time()
+        model = _locals["self"]
+        if (n_steps + 1) % eval_save_period == 0:
+            eval_dir = os.path.join(experiment_name, "eval{}".format(n_steps))
+            os.makedirs(eval_dir)
+            avg_ret = evaluate(model, eval_dir)
+            rets_path = os.path.join(experiment_name, "eval_avg_rets.txt")
+            with open(rets_path, "a") as f:
+                f.write("{}:{}\n".format(n_steps, avg_ret))
+            if avg_ret > best_mean:
+                best_mean = avg_ret
+                shutil.rmtree(best_dir)
+                shutil.copytree(eval_dir, best_dir)
+        n_steps += 1
+        end_eval_time = time.time() - start_eval_time
+        print("Finished evaluation in {:.2f} seconds".format(end_eval_time))
+        return True
+
+    model.learn(total_timesteps=timesteps, callback=callback)
+    evaluate(model, final_dir)
 
 
 if __name__ == "__main__":
+    wandb.init(project="hr_adaptation", sync_tensorboard=True)
     flags.mark_flag_as_required("name")
     gin.parse_config_files_and_bindings(FLAGS.gin_file, FLAGS.gin_param)
     train(FLAGS.name, FLAGS.logdir)

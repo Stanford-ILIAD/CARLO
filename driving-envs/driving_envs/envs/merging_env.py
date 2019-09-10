@@ -1,8 +1,10 @@
+import io
 import math
 import time
 from typing import Dict, Text, Tuple
 import gin
 import gym
+from PIL import Image
 import numpy as np
 import scipy.special
 from driving_envs.world import World
@@ -241,6 +243,9 @@ class MergingEnv2(gym.Env):
         return self.world.state
 
     def render(self, mode="human"):
-        if mode != "human":
-            raise NotImplementedError("Unsupported mode: {}".format(mode))
         self.world.render()
+        if mode == "rgb_array":
+            cnv = self.world.visualizer.win
+            ps = cnv.postscript(colormode = 'color')
+            img = Image.open(io.BytesIO(ps.encode('utf-8')))
+            return np.array(img)
