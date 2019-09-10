@@ -55,26 +55,31 @@ def train(
         f.write(gin.operative_config_str())
     n_steps, best_mean = 0, -np.inf  # pylint: disable=unused-variable
 
-    def evaluate(model, eval_dir):
+    def evaluate(model, eval_dir, videos=False):
         # Need to transfer running avgs from env->eval_env
         model.save(os.path.join(eval_dir, "model.pkl"))
         env.save_running_average(eval_dir)
         eval_env.load_running_average(eval_dir)
         obs = eval_env.reset()
-        imgs = []
-        imgs.append(eval_env.get_images())
+        if videos:
+            imgs = []
+            imgs.append(eval_env.get_images())
         dones = np.array([False])
         rets = 0
+        obs_history = [obs]
         while not np.all(dones):
             action, _states = model.predict(obs, deterministic=True)
             next_obs, rewards, dones, _ = eval_env.step(action)
+            obs_history.append(next_obs)
             rets += rewards
-            imgs.append(eval_env.get_images())
+            if videos:
+                imgs.append(eval_env.get_images())
             obs = next_obs
         avg_ret = np.mean(rets)
-        for i in range(num_envs):
-            clip = ImageSequenceClip([img[i] for img in imgs], fps=25)
-            clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
+        if videos:
+            for i in range(num_envs):
+                clip = ImageSequenceClip([img[i] for img in imgs], fps=25)
+                clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
         return avg_ret
 
     def callback(_locals, _globals):
