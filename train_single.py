@@ -24,7 +24,7 @@ flags.DEFINE_multi_string(
 flags.DEFINE_string("logdir", "/tmp/driving", "Logdir")
 
 PPO2 = gin.external_configurable(PPO2)
-VecNormalize = gin.external_configurable(VecNormalize)
+gin_VecNormalize = gin.external_configurable(VecNormalize)
 
 
 @gin.configurable
@@ -44,7 +44,7 @@ def train(
     os.makedirs(best_dir)
     os.makedirs(final_dir)
     wandb.save(experiment_name)
-    env = VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
+    env = gin_VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
     max_accs = np.linspace(2, 4, num=num_envs).tolist()
     eval_env_fns = [partial(make_single_env, human_max_accs=[max_acc]) for max_acc in max_accs]
     eval_env = VecNormalize(DummyVecEnv(eval_env_fns), training=False)
@@ -64,12 +64,11 @@ def train(
         if videos:
             imgs = []
             imgs.append(eval_env.get_images())
-        dones = np.array([False])
         rets = 0
         state = None
         for _ in range(150):
             action, state = model.predict(obs, state=state, deterministic=True)
-            next_obs, rewards, dones, _ = eval_env.step(action)
+            next_obs, rewards, _dones, _info = eval_env.step(action)
             rets += rewards
             if videos:
                 imgs.append(eval_env.get_images())
