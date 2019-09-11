@@ -35,6 +35,8 @@ def train(
     timesteps=gin.REQUIRED,
     recurrent=False,
     eval_save_period=100,
+    train_human_max_accs=None,
+    eval_human_max_accs=None,
 ):
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)
@@ -44,10 +46,20 @@ def train(
     os.makedirs(best_dir)
     os.makedirs(final_dir)
     wandb.save(experiment_name)
-    env = gin_VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
-    max_accs = np.linspace(2, 4, num=num_envs).tolist()
-    eval_env_fns = [partial(make_single_env, human_max_accs=[max_acc]) for max_acc in max_accs]
-    eval_env = VecNormalize(DummyVecEnv(eval_env_fns), training=False)
+    if train_human_max_accs is None:
+        train_human_max_accs = np.linspace(2, 4, num=10)
+    if eval_human_max_accs is None:
+        eval_human_max_accs = np.linspace(2, 4, num=num_envs)
+    train_env_fn = partial(make_single_env, human_max_accs=train_human_max_accs)
+    env = gin_VecNormalize(SubprocVecEnv(num_envs * [train_env_fn]))
+    eval_env_fns = [
+        partial(
+            make_single_env, human_max_accs=[eval_human_max_accs[i % len(eval_human_max_accs)]]
+        )
+        for i in range(num_envs)
+    ]
+    # Get true returns out from eval env.
+    eval_env = VecNormalize(DummyVecEnv(eval_env_fns), training=False, norm_reward=False)
     policy = MlpLnLstmPolicy if recurrent else MlpPolicy
     model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
     op_config_path = os.path.join(experiment_name, "operative_config.gin")
@@ -78,6 +90,8 @@ def train(
             for i in range(num_envs):
                 clip = ImageSequenceClip([img[i] for img in imgs], fps=10)
                 clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
+            for inner_env in eval_env.venv.envs:
+                inner_env.multi_env.world.close()
         return avg_ret
 
     def callback(_locals, _globals):

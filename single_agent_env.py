@@ -51,7 +51,6 @@ class PidPolicy:
         self.errors = []
 
 
-@gin.configurable
 class PidSingleEnv(gym.Env):
     """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
 
@@ -60,8 +59,6 @@ class PidSingleEnv(gym.Env):
     ):
         self.multi_env = multi_env
         self.discrete = discrete
-        if human_max_accs is None:
-            human_max_accs = np.linspace(2, 4, num=10).tolist()
         self.human_max_accs = human_max_accs
         if discrete:
             self.num_bins = (5, 5)
@@ -85,6 +82,8 @@ class PidSingleEnv(gym.Env):
         return obs, rew["R"], done, debug
 
     def reset(self):
+        if self.human_max_accs is None:
+            max_acc = 2 * np.random.random_sample() + 2
         max_acc = np.random.choice(self.human_max_accs)
         self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, np.inf)
         obs = self.multi_env.reset()
