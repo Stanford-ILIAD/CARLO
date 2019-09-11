@@ -179,11 +179,11 @@ class MergingEnv2(gym.Env):
 
     def __init__(
         self,
-        dt: float = 0.04,
+        dt: float = 0.1,
         width: int = 120,
         height: int = 120,
         ctrl_cost_weight: float = 0.0,
-        time_limit: int = 150
+        time_limit: int = 60
     ):
         super(MergingEnv2, self).__init__()
         self.dt, self.width, self.height = dt, width, height
@@ -216,7 +216,8 @@ class MergingEnv2(gym.Env):
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
         vel_rew = .1 * car.velocity.y
-        right_lane_cost = 2 * expit((car.y - 75)/3) * max(car.x - 60, 0)
+        # right_lane_cost = 2 * expit((car.y - 75)/3) * max(car.x - 60, 0)
+        right_lane_cost = .05 * max(car.x - 59, 0)
         control_cost = np.square(car.inputAcceleration)
         return vel_rew - right_lane_cost - self._ctrl_cost_weight * control_cost
 

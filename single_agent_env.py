@@ -64,7 +64,7 @@ class PidSingleEnv(gym.Env):
             human_max_accs = np.linspace(2, 4, num=10).tolist()
         self.human_max_accs = human_max_accs
         if discrete:
-            self.num_bins = (11, 11)
+            self.num_bins = (5, 5)
             self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
             self.action_space = spaces.Discrete(int(np.prod(self.num_bins)))
             self.int_to_tuple = list(itertools.product(*[range(x) for x in self.num_bins]))

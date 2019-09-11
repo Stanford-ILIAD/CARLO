@@ -26,7 +26,7 @@ def test(experiment_name):
         print(rewards)
         ret += rewards
         env.render()
-        time.sleep(0.04)
+        time.sleep(0.1)
         i += 1
     print("Steps: {:d}\tRet: {}".format(i, ret))
 

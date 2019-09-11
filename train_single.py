@@ -66,7 +66,7 @@ def train(
             imgs.append(eval_env.get_images())
         rets = 0
         state = None
-        for _ in range(150):
+        for _ in range(60):
             action, state = model.predict(obs, state=state, deterministic=True)
             next_obs, rewards, _dones, _info = eval_env.step(action)
             rets += rewards
@@ -76,7 +76,7 @@ def train(
         avg_ret = np.mean(rets)
         if videos:
             for i in range(num_envs):
-                clip = ImageSequenceClip([img[i] for img in imgs], fps=25)
+                clip = ImageSequenceClip([img[i] for img in imgs], fps=10)
                 clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
         return avg_ret
 
