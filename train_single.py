@@ -16,7 +16,7 @@ import wandb
 from single_agent_env import make_single_env
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("name", None, "Name of experiment")
+flags.DEFINE_string("name", "ppo_driving", "Name of experiment")
 flags.DEFINE_multi_string("gin_file", "configs/ppo.gin", "List of paths to the config files.")
 flags.DEFINE_multi_string(
     "gin_param", None, "Newline separated list of Gin parameter bindings."
@@ -55,7 +55,7 @@ def train(
         f.write(gin.operative_config_str())
     n_steps, best_mean = 0, -np.inf  # pylint: disable=unused-variable
 
-    def evaluate(model, eval_dir, videos=False):
+    def evaluate(model, eval_dir, videos=True):
         # Need to transfer running avgs from env->eval_env
         model.save(os.path.join(eval_dir, "model.pkl"))
         env.save_running_average(eval_dir)
@@ -66,15 +66,18 @@ def train(
             imgs.append(eval_env.get_images())
         dones = np.array([False])
         rets = 0
-        obs_history = [obs]
+        state = None
+        i = 0
         while not np.all(dones):
-            action, _states = model.predict(obs, deterministic=True)
+            action, state = model.predict(obs, state=state, deterministic=True)
             next_obs, rewards, dones, _ = eval_env.step(action)
-            obs_history.append(next_obs)
             rets += rewards
             if videos:
                 imgs.append(eval_env.get_images())
             obs = next_obs
+            if i > 150:
+                raise ValueError("Exceeded max steps.")
+            i += 1
         avg_ret = np.mean(rets)
         if videos:
             for i in range(num_envs):
