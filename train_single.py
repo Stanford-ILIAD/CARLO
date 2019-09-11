@@ -67,17 +67,13 @@ def train(
         dones = np.array([False])
         rets = 0
         state = None
-        i = 0
-        while not np.all(dones):
+        for _ in range(150):
             action, state = model.predict(obs, state=state, deterministic=True)
             next_obs, rewards, dones, _ = eval_env.step(action)
             rets += rewards
             if videos:
                 imgs.append(eval_env.get_images())
             obs = next_obs
-            if i > 150:
-                raise ValueError("Exceeded max steps.")
-            i += 1
         avg_ret = np.mean(rets)
         if videos:
             for i in range(num_envs):
