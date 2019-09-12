@@ -1,8 +1,7 @@
-import argparse
+from functools import partial
 import os
 import time
 import gin
-import gym
 import numpy as np
 from single_agent_env import make_single_env
 from stable_baselines import PPO2
@@ -10,7 +9,7 @@ from stable_baselines.common.vec_env import DummyVecEnv, vec_normalize
 from tensorflow import flags
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("name", None, "Name of experiment")
+flags.DEFINE_string("name", "ppo_driving", "Name of experiment")
 flags.DEFINE_multi_string("gin_file", None, "List of paths to the config files.")
 flags.DEFINE_multi_string(
     "gin_param", None, "Newline separated list of Gin parameter bindings."
@@ -18,11 +17,14 @@ flags.DEFINE_multi_string(
 
 
 def test(experiment_name):
-    model = PPO2.load(os.path.join(experiment_name, "model"))
+    bestdir = os.path.join(experiment_name, "best")
+    model = PPO2.load(os.path.join(bestdir, "model.pkl"))
     env = vec_normalize.VecNormalize(
-        DummyVecEnv([make_single_env]), training=False, norm_reward=False
+        DummyVecEnv([partial(make_single_env, discrete=True, human_max_accs=[4.0])]),
+        training=False,
+        norm_reward=False,
     )
-    env.load_running_average(experiment_name)
+    env.load_running_average(bestdir)
 
     # Enjoy trained agent
     obs = env.reset()

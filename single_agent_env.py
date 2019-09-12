@@ -84,7 +84,8 @@ class PidSingleEnv(gym.Env):
     def reset(self):
         if self.human_max_accs is None:
             max_acc = 2 * np.random.random_sample() + 2
-        max_acc = np.random.choice(self.human_max_accs)
+        else:
+            max_acc = np.random.choice(self.human_max_accs)
         self._pid_human = PidPolicy(self.multi_env.dt, 10, max_acc, np.inf)
         obs = self.multi_env.reset()
         self.previous_obs = obs
