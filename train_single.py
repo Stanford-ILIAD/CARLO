@@ -1,5 +1,6 @@
 """Train with PPO."""
 
+import csv
 from functools import partial
 import os
 import shutil
@@ -43,6 +44,7 @@ def train(
     os.makedirs(experiment_name)
     best_dir = os.path.join(experiment_name, "best")
     final_dir = os.path.join(experiment_name, "final")
+    rets_path = os.path.join(experiment_name, "eval.csv")
     os.makedirs(best_dir)
     os.makedirs(final_dir)
     wandb.save(experiment_name)
@@ -87,14 +89,13 @@ def train(
             if videos:
                 imgs.append(eval_env.get_images())
             obs = next_obs
-        avg_ret = np.mean(rets)
         if videos:
             for i in range(num_envs):
                 clip = ImageSequenceClip([img[i] for img in imgs], fps=10)
                 clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
             for inner_env in eval_env.venv.envs:
                 inner_env.multi_env.world.close()
-        return avg_ret
+        return rets
 
     def callback(_locals, _globals):
         nonlocal n_steps, best_mean
@@ -103,10 +104,11 @@ def train(
             start_eval_time = time.time()
             eval_dir = os.path.join(experiment_name, "eval{}".format(n_steps))
             os.makedirs(eval_dir)
-            avg_ret = evaluate(model, eval_dir)
-            rets_path = os.path.join(experiment_name, "eval_avg_rets.txt")
-            with open(rets_path, "a") as f:
-                f.write("{}:{}\n".format(n_steps, avg_ret))
+            rets = evaluate(model, eval_dir)
+            avg_ret = np.mean(rets)
+            with open(rets_path, "a", newline='') as f:
+                writer = csv.writer(f, )
+                writer.writerow([n_steps] + [ret for ret in rets])
             if avg_ret > best_mean:
                 best_mean = avg_ret
                 shutil.rmtree(best_dir)
@@ -117,7 +119,10 @@ def train(
         return True
 
     model.learn(total_timesteps=timesteps, callback=callback)
-    evaluate(model, final_dir)
+    rets = evaluate(model, final_dir)
+    with open(rets_path, "a", newline='') as f:
+        writer = csv.writer(f, )
+        writer.writerow([-1] + [ret for ret in rets])
 
 
 if __name__ == "__main__":
