@@ -1,5 +1,5 @@
 train.num_envs = 8
-train.timesteps = 500000
+train.timesteps = 300000
 PPO2.gamma = 0.995
 PPO2.n_steps = 60
 PPO2.ent_coef = 1e-2
