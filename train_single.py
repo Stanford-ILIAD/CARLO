@@ -78,10 +78,12 @@ def train(
             imgs.append(eval_env.get_images())
         rets = 0
         state = None
+        ever_done = False
         for _ in range(60):
             action, state = model.predict(obs, state=state, deterministic=True)
-            next_obs, rewards, _dones, _info = eval_env.step(action)
-            rets += rewards
+            next_obs, rewards, dones, _info = eval_env.step(action)
+            ever_done = np.logical_or(dones, ever_done)
+            rets += rewards * np.logical_not(ever_done)
             if videos:
                 imgs.append(eval_env.get_images())
             obs = next_obs
@@ -120,6 +122,5 @@ def train(
 
 if __name__ == "__main__":
     wandb.init(project="hr_adaptation", sync_tensorboard=True)
-    flags.mark_flag_as_required("name")
     gin.parse_config_files_and_bindings(FLAGS.gin_file, FLAGS.gin_param)
     train(FLAGS.name, FLAGS.logdir)
