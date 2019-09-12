@@ -216,7 +216,7 @@ class MergingEnv2(gym.Env):
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
         vel_rew = .1 * car.velocity.y
-        right_lane_cost = expit((car.y - 60)/7) * max(car.x - 58.5, 0)
+        right_lane_cost = expit((car.y - 60)/7) * max(car.x - 59, 0)
         # right_lane_cost = .1 * max(car.x - 59, 0)
         control_cost = np.square(car.inputAcceleration)
         return vel_rew - right_lane_cost - self._ctrl_cost_weight * control_cost
