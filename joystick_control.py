@@ -12,7 +12,7 @@ def main():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     joystick = joysticks[0]
     joystick.init()
-    env = make_single_env()
+    env = make_single_env(human_max_accs=[1])
     for _ in range(1):
         done = False
         obs = env.reset()
