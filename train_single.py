@@ -110,11 +110,11 @@ def train(
             start_eval_time = time.time()
             eval_dir = os.path.join(experiment_name, "eval{}".format(n_steps))
             os.makedirs(eval_dir)
-            rets = evaluate(model, eval_dir)
+            rets = evaluate(model, eval_dir, videos=False)
             avg_ret = np.mean(rets)
             with open(rets_path, "a", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow([n_steps] + [ret for ret in rets])
+                writer.writerow([n_steps, avg_ret] + [ret for ret in rets])
             if avg_ret > best_mean:
                 best_mean = avg_ret
                 shutil.rmtree(best_dir)
@@ -126,9 +126,14 @@ def train(
 
     model.learn(total_timesteps=timesteps, callback=callback)
     rets = evaluate(model, final_dir)
+    avg_ret = np.mean(rets)
+    if avg_ret > best_mean:
+        best_mean = avg_ret
+        shutil.rmtree(best_dir)
+        shutil.copytree(final_dir, best_dir)
     with open(rets_path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([-1] + [ret for ret in rets])
+        writer.writerow([-1, avg_ret] + [ret for ret in rets])
 
 
 if __name__ == "__main__":
