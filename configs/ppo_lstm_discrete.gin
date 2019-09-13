@@ -1,0 +1,11 @@
+train.num_envs = 8
+train.timesteps = 300000
+train.recurrent = True
+PPO2.gamma = 0.995
+PPO2.n_steps = 60
+PPO2.ent_coef = 1e-2
+VecNormalize.norm_reward = True
+VecNormalize.gamma = 0.995
+make_single_env.discrete = True
+train.train_human_max_accs = [2.0]
+train.eval_human_max_accs = [2.0]
