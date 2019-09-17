@@ -4,4 +4,3 @@ PPO2.gamma = 0.999
 PPO2.n_steps = 300
 PPO2.ent_coef = 1e-2
 VecNormalize.norm_reward = False
-PidSingleEnv.human_max_accs = [2.3]

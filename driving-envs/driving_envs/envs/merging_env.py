@@ -211,7 +211,10 @@ class MergingEnv2(gym.Env):
                 raise ValueError("Car went out of bounds!")
         if self.step_num >= self.time_limit:
             done = True
-        return self.world.state, reward, done, {}
+        return self._get_obs(), reward, done, {}
+
+    def _get_obs(self):
+        return np.concatenate((self.world.state[:6], self.world.state[7:13]))
 
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
@@ -241,7 +244,7 @@ class MergingEnv2(gym.Env):
         self.cars["H"].velocity = Point(0, 10)
         self.cars["R"].velocity = Point(0, 10)
         self.step_num = 0
-        return self.world.state
+        return self._get_obs()
 
     def render(self, mode="human"):
         self.world.render()

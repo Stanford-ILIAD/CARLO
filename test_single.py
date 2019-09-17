@@ -20,7 +20,7 @@ def test(experiment_name):
     bestdir = os.path.join(experiment_name, "best")
     model = PPO2.load(os.path.join(bestdir, "model.pkl"))
     env = vec_normalize.VecNormalize(
-        DummyVecEnv([partial(make_single_env, discrete=True, human_max_accs=[4.0])]),
+        DummyVecEnv([partial(make_single_env, discrete=True)]),
         training=False,
         norm_reward=False,
     )

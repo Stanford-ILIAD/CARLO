@@ -14,7 +14,7 @@ from stable_baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 from tensorflow import flags
 import wandb
-from single_agent_env import make_single_env
+from single_agent_env import make_single_env, PidPosPolicy, PidVelPolicy
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("name", "ppo_driving", "Name of experiment")
@@ -36,8 +36,6 @@ def train(
     timesteps=gin.REQUIRED,
     recurrent=False,
     eval_save_period=100,
-    train_human_max_accs=None,
-    eval_human_max_accs=None,
 ):
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)
@@ -48,15 +46,12 @@ def train(
     os.makedirs(best_dir)
     os.makedirs(final_dir)
     wandb.save(experiment_name)
-    if train_human_max_accs is None:
-        train_human_max_accs = np.linspace(2, 4, num=10)
-    if eval_human_max_accs is None:
-        eval_human_max_accs = np.linspace(2, 4, num=num_envs)
-    train_env_fn = partial(make_single_env, human_max_accs=train_human_max_accs)
-    env = gin_VecNormalize(SubprocVecEnv(num_envs * [train_env_fn]))
+    env = gin_VecNormalize(SubprocVecEnv(num_envs * [make_single_env]))
+    dt = 0.1
+    eval_human_policies = [PidPosPolicy(dt, 10, 3.5, np.inf), PidVelPolicy(dt, 10)]
     eval_env_fns = [
         partial(
-            make_single_env, human_max_accs=[eval_human_max_accs[i % len(eval_human_max_accs)]]
+            make_single_env, human_policies=[eval_human_policies[i % len(eval_human_policies)]]
         )
         for i in range(num_envs)
     ]
