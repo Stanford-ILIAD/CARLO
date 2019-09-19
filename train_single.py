@@ -78,11 +78,11 @@ def train(
         ever_done = False
         state_history = []
         for _ in range(60):
-            action, state = model.predict(obs, state=state, deterministic=True)
-            next_obs, rewards, dones, _info = eval_env.step(action)
             state_history.append(
                 [inner_env.multi_env.world.state for inner_env in eval_env.venv.envs]
             )
+            action, state = model.predict(obs, state=state, deterministic=True)
+            next_obs, rewards, dones, _info = eval_env.step(action)
             ever_done = np.logical_or(dones, ever_done)
             rets += rewards * np.logical_not(ever_done)
             if videos:
@@ -92,6 +92,7 @@ def train(
         np.save(os.path.join(eval_dir, "state_history.npy"), state_history)
         if videos:
             for i in range(num_envs):
+                import ipdb; ipdb.set_trace()
                 clip = ImageSequenceClip([img[i] for img in imgs], fps=10)
                 clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
             for inner_env in eval_env.venv.envs:
@@ -128,7 +129,7 @@ def train(
         shutil.copytree(final_dir, best_dir)
     with open(rets_path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([-1, avg_ret] + [ret for ret in rets])
+        writer.writerow([n_steps, avg_ret] + [ret for ret in rets])
 
 
 if __name__ == "__main__":

@@ -8,6 +8,12 @@ CARLO stands for _[CARLA](http://carla.org/) - Low Budget_. CARLO is definitely 
 You need to have the following libraries with [Python3](http://www.python.org/downloads):
 - [NumPy](http://www.numpy.org/)
 - [TkInter](http://wiki.python.org/moin/TkInter)
+- `pip install -e driving-envs`
+- `pip install stable_baselines`
+- `pip install wandb`
+- `pip install tensorflow-gpu`
+- `sudo apt-get install ghostcript`: For rendering the env to video.
+- `pip install moviepy`
 
 ## Running
 Simply run
