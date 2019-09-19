@@ -92,7 +92,6 @@ def train(
         np.save(os.path.join(eval_dir, "state_history.npy"), state_history)
         if videos:
             for i in range(num_envs):
-                import ipdb; ipdb.set_trace()
                 clip = ImageSequenceClip([img[i] for img in imgs], fps=10)
                 clip.write_videofile(os.path.join(eval_dir, "eval{:d}.mp4".format(i)))
             for inner_env in eval_env.venv.envs:
@@ -108,6 +107,7 @@ def train(
             os.makedirs(eval_dir)
             rets = evaluate(model, eval_dir, videos=False)
             avg_ret = np.mean(rets)
+            wandb.log({"avg_eval_ret": avg_ret}, step=_locals["self"].num_timesteps)
             with open(rets_path, "a", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow([n_steps, avg_ret] + [ret for ret in rets])
