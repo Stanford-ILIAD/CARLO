@@ -58,23 +58,27 @@ def train(
         env.save_running_average(eval_dir)
         eval_env.load_running_average(eval_dir)
         obs = eval_env.reset()
-        task_idcs, num_eval_tasks = 0, len(eval_env.venv.envs[0].human_policies)
-        rets, state_history = np.zeros((num_eval_tasks, num_envs)), []
+        task_idcs = np.zeros(num_envs, dtype=np.int64)
+        num_eval_tasks = len(eval_env.venv.envs[0].human_policies)
+        rets, state_history  = np.zeros((num_eval_tasks, num_envs)), []
         state, dones = None, [False for _ in range(num_envs)]
-        while np.all(task_idcs >= num_eval_tasks):
+        done_history = []
+        while np.any(task_idcs < num_eval_tasks):
             state_history.append(
                 [inner_env.multi_env.world.state for inner_env in eval_env.venv.envs]
             )
             action, state = model.predict(obs, state=state, mask=dones, deterministic=True)
             next_obs, rewards, dones, _info = eval_env.step(action)
+            done_history.append(dones)
             for env_idx, reward in enumerate(rewards):
+                task_idx = task_idcs[env_idx]
                 if task_idx < num_eval_tasks:
-                    task_idx = task_idcs[env_idx]
                     rets[task_idx, env_idx] += reward
             task_idcs += dones.astype(np.int64)
             obs = next_obs
-        state_history = np.array(state_history)
+        state_history, done_history = np.array(state_history), np.array(done_history)
         np.save(os.path.join(eval_dir, "state_history.npy"), state_history)
+        np.save(os.path.join(eval_dir, "done_history.npy"), done_history)
         return np.mean(rets, axis=-1)  # Average along env dimension of rets array.
 
     n_steps = 0  # pylint: disable=unused-variable

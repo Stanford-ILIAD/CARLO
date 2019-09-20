@@ -14,7 +14,7 @@ def main():
     api = wandb.Api()
     run_path = "ayzhong/hr_adaptation/" + FLAGS.run_id
     run = api.run(run_path)
-    rel_path = "ppo_driving/final/state_history.npy"
+    rel_path = "ppo_driving/eval1041/state_history.npy"
     local_dir = "/tmp/{}".format(os.path.basename(run_path))
     wandbfile = run.file(rel_path)
     wandbfile.download(root="/tmp/{}".format(os.path.basename(run_path)), replace=True)
