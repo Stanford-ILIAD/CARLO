@@ -83,19 +83,30 @@ class PidVelPolicy:
         self.errors = []
 
 
+def get_human_policies(mode, dt):
+    if mode == "fixed_1":
+        return [PidVelPolicy(dt, 10)]
+    elif mode == "fixed_2":
+        return [PidPosPolicy(dt, 10, 3.5, np.inf), PidVelPolicy(dt, 10)]
+    elif mode == "random_8":
+        target_vels = 2 * np.random.rand(4) + 10  # 4 samples from Uniform([10, 12])
+        vel_pols = [PidVelPolicy(dt, target_vel) for target_vel in target_vels]
+        target_accs = 4 * np.random.rand(4)  # 4 samples from Uniform([0, 4])
+        pos_pols = [PidPosPolicy(dt, 10, target_acc, np.inf) for target_acc in target_accs]
+        return vel_pols + pos_pols
+    else:
+        raise ValueError("Unrecognized mode {}".format(mode))
+
+
 class PidSingleEnv(gym.Env):
     """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
 
-    def __init__(self, multi_env, discrete: bool = False, human_policies=None):
+    def __init__(self, multi_env, human_policies=None, discrete: bool = False, random=True):
         self.multi_env = multi_env
+        self.human_policies = human_policies
         self.discrete = discrete
-        if human_policies:
-            self.human_policies = human_policies
-        else:
-            self.human_policies = [
-                PidPosPolicy(self.multi_env.dt, 10, 3.5, np.inf),
-                PidVelPolicy(self.multi_env.dt, 10),
-            ]
+        self.random = random
+        self._policy_idx = 0
         if discrete:
             self.num_bins = (5, 5)
             self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
@@ -118,7 +129,11 @@ class PidSingleEnv(gym.Env):
         return obs, rew["R"], done, debug
 
     def reset(self):
-        self._pid_human = np.random.choice(self.human_policies)
+        if self.random:
+            self._pid_human = np.random.choice(self.human_policies)
+        else:
+            self._pid_human = self.human_policies[self._policy_idx]
+            self._policy_idx = (self._policy_idx + 1) % len(self.human_policies)
         obs = self.multi_env.reset()
         self.previous_obs = obs
         return obs
@@ -128,8 +143,14 @@ class PidSingleEnv(gym.Env):
 
 
 @gin.configurable
-def make_single_env(name="Merging-v1", **kwargs):
+def make_single_env(name="Merging-v1", human_mode=None, **kwargs):
     multi_env = gym.make(name)
+    if human_mode is not None:
+        assert "human_policies" not in kwargs, "Set one of human_mode or human_policies."
+        human_policies = get_human_policies(human_mode, multi_env.dt)
+        kwargs["human_policies"] = human_policies
+    else:
+        assert "human_policies" in kwargs, "Set one of human_mode or human_policies."
     env = PidSingleEnv(multi_env, **kwargs)
     return env
 

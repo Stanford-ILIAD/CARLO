@@ -32,6 +32,17 @@ class World:
     def state(self):
         return np.concatenate([agent.state for agent in self.dynamic_agents])
 
+    @state.setter
+    def state(self, x):
+        num_agents = len(self.dynamic_agents)
+        assert x.shape[0] % num_agents == 0
+        agent_state_length = int(x.shape[0] / num_agents)
+        offset = 0
+        for agent in self.dynamic_agents:
+            agent_new_state = x[offset : offset + agent_state_length]
+            agent.state = agent_new_state
+            offset += agent_state_length
+
     @property
     def agents(self):
         return self.static_agents + self.dynamic_agents

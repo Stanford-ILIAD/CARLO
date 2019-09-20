@@ -99,18 +99,21 @@ class Entity:
             )
         )
 
+    @state.setter
+    def state(self, new_x):
+        self.center = Point(new_x[0], new_x[1])
+        self.velocity = Point(new_x[2], new_x[3])
+        self.heading = new_x[4]
+        self.angular_velocity = new_x[5]
+        self.acceleration = new_x[6]
+        self.buildGeometry()
+
     def tick(self, dt: float):
         if self.movable:
             x = self.state
             u = np.array((self.inputSteering, self.inputAcceleration))
             new_x = self.entity_dynamics(x, u, dt)
-            self.center = Point(new_x[0], new_x[1])
-            self.velocity = Point(new_x[2], new_x[3])
-            self.heading = new_x[4]
-            self.angular_velocity = new_x[5]
-            self.acceleration = new_x[6]
-
-            self.buildGeometry()
+            self.state = new_x
 
     def buildGeometry(self):  # builds the obj
         raise NotImplementedError

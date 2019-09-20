@@ -1,49 +1,34 @@
-from functools import partial
 import os
-import time
-import gin
+import gym
+from moviepy.editor import ImageSequenceClip
 import numpy as np
-from single_agent_env import make_single_env
-from stable_baselines import PPO2
-from stable_baselines.common.vec_env import DummyVecEnv, vec_normalize
 from tensorflow import flags
+import wandb
+import driving_envs  # pylint: disable=unused-import
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("name", "ppo_driving", "Name of experiment")
-flags.DEFINE_multi_string("gin_file", None, "List of paths to the config files.")
-flags.DEFINE_multi_string(
-    "gin_param", None, "Newline separated list of Gin parameter bindings."
-)
+flags.DEFINE_string("run_id", None, "Wandb experiment run id.")
 
 
-def test(experiment_name):
-    bestdir = os.path.join(experiment_name, "best")
-    model = PPO2.load(os.path.join(bestdir, "model.pkl"))
-    env = vec_normalize.VecNormalize(
-        DummyVecEnv([partial(make_single_env, discrete=True)]),
-        training=False,
-        norm_reward=False,
-    )
-    env.load_running_average(bestdir)
-
-    # Enjoy trained agent
-    obs = env.reset()
-    env.render()
-    input()  # Wait until user presses key to start. Useful for video recording.
-    ret = 0
-    i = 0
-    dones = np.array([False])
-    while not np.all(dones):
-        action, _states = model.predict(obs, deterministic=True)
-        obs, rewards, dones, info = env.step(action)
-        print(rewards)
-        ret += rewards
-        env.render()
-        time.sleep(0.1)
-        i += 1
-    print("Steps: {:d}\tRet: {}".format(i, ret))
+def main():
+    api = wandb.Api()
+    run_path = "ayzhong/hr_adaptation/" + FLAGS.run_id
+    run = api.run(run_path)
+    rel_path = "ppo_driving/final/state_history.npy"
+    local_dir = "/tmp/{}".format(os.path.basename(run_path))
+    wandbfile = run.file(rel_path)
+    wandbfile.download(root="/tmp/{}".format(os.path.basename(run_path)), replace=True)
+    state_history = np.load(os.path.join(local_dir, rel_path))  # (T, num_envs, K)
+    multi_env = gym.make("Merging-v1")
+    multi_env.reset()
+    frames = [multi_env.render(mode="rgb_array")]
+    for state in state_history[:, 0]:
+        multi_env.world.state = state
+        frames.append(multi_env.render(mode="rgb_array"))
+    clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
+    clip.write_videofile(os.path.join('.', "eval.mp4"))
 
 
 if __name__ == "__main__":
-    gin.parse_config_files_and_bindings(FLAGS.gin_file, FLAGS.gin_param)
-    test(FLAGS.name)
+    flags.mark_flag_as_required("run_id")
+    main()
