@@ -1,5 +1,5 @@
 train.num_envs = 8
-train.timesteps = 300000
+train.timesteps = 500000
 train.recurrent = True
 PPO2.gamma = 0.995
 PPO2.n_steps = 60
