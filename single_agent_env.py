@@ -50,6 +50,11 @@ class PidPosPolicy:
         self.integral = 0
         self.errors = []
 
+    def __str__(self):
+        return "PidPosPolicy({},{}, {}, {})".format(
+            self.dt, self._target_dist, self._max_acc, self._max_vel
+        )
+
 
 class PidVelPolicy:
     """PID controller that maintains a fixed velocity."""
@@ -81,6 +86,9 @@ class PidVelPolicy:
         self.previous_error = 0
         self.integral = 0
         self.errors = []
+
+    def __str__(self):
+        return "PidVelPolicy({},{})".format(self.dt, self._target_vel)
 
 
 def get_human_policies(mode, dt):

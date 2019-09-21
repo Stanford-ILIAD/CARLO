@@ -1,5 +1,6 @@
 """Train with PPO."""
 
+import copy
 import csv
 import os
 import shutil
@@ -12,7 +13,7 @@ from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 from tensorflow import flags
 import wandb
-from single_agent_env import make_single_env
+from single_agent_env import make_single_env, get_human_policies
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("name", "ppo_driving", "Name of experiment")
@@ -35,15 +36,23 @@ def train(
     recurrent=False,
     eval_save_period=100,
     human_mode="fixed_2",
+    split_train_eval=True,
 ):
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)
     os.makedirs(experiment_name)
     rets_path = os.path.join(experiment_name, "eval.csv")
     wandb.save(experiment_name)
-    env_fns = num_envs * [lambda: make_single_env(human_mode=human_mode)]
+    human_policies = get_human_policies(human_mode, 0.1)
+    env_fns = num_envs * [lambda: make_single_env(human_policies=human_policies)]
     env = gin_VecNormalize(SubprocVecEnv(env_fns))
-    eval_env_fns = num_envs * [lambda: make_single_env(human_mode=human_mode, random=False)]
+    if split_train_eval:
+        eval_human_policies = get_human_policies(human_mode, 0.1)
+    else:
+        eval_human_policies = copy.deepcopy(human_policies)
+    eval_env_fns = num_envs * [
+        lambda: make_single_env(human_policies=eval_human_policies, random=False)
+    ]
     # Get true (un-normalized) rewards out from eval env.
     eval_env = VecNormalize(DummyVecEnv(eval_env_fns), training=False, norm_reward=False)
     policy = MlpLnLstmPolicy if recurrent else MlpPolicy
@@ -60,7 +69,7 @@ def train(
         obs = eval_env.reset()
         task_idcs = np.zeros(num_envs, dtype=np.int64)
         num_eval_tasks = len(eval_env.venv.envs[0].human_policies)
-        rets, state_history  = np.zeros((num_eval_tasks, num_envs)), []
+        rets, state_history = np.zeros((num_eval_tasks, num_envs)), []
         state, dones = None, [False for _ in range(num_envs)]
         done_history = []
         while np.any(task_idcs < num_eval_tasks):
