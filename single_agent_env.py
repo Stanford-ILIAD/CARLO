@@ -62,10 +62,9 @@ class PidVelPolicy:
     def __init__(
         self,
         dt: float,
-        target_vel: float,
         params: Tuple[float, float, float] = (3.0, 1.0, 6.0),
     ):
-        self._target_vel = target_vel
+        self._target_vel = None
         self.previous_error = 0
         self.integral = 0
         self.errors = []
@@ -74,6 +73,8 @@ class PidVelPolicy:
 
     def action(self, obs):
         my_y_dot = obs[3]
+        if self._target_vel is None:
+            self._target_vel = my_y_dot
         error = self._target_vel - my_y_dot
         derivative = (error - self.previous_error) * self.dt
         self.integral = self.integral + self.dt * error
@@ -83,29 +84,23 @@ class PidVelPolicy:
         return np.array((0, acc))
 
     def reset(self):
+        self._target_vel = None
         self.previous_error = 0
         self.integral = 0
         self.errors = []
 
     def __str__(self):
-        return "PidVelPolicy({},{})".format(self.dt, self._target_vel)
+        return "PidVelPolicy({})".format(self.dt)
 
 
 def get_human_policies(mode, dt):
     if mode == "fixed_1":
-        return [PidVelPolicy(dt, 10)]
+        return [PidVelPolicy(dt)]
     elif mode == "fixed_2":
-        return [PidPosPolicy(dt, 10, 3.5, np.inf), PidVelPolicy(dt, 10)]
+        return [PidPosPolicy(dt, 10, 4.0, np.inf), PidVelPolicy(dt)]
     elif mode == "random_10":
-        target_vels = 2 * np.random.rand(5) + 10  # 5 samples from Uniform([10, 12])
-        vel_pols = [PidVelPolicy(dt, target_vel) for target_vel in target_vels]
-        target_accs = 4 * np.random.rand(5)  # 5 samples from Uniform([0, 4])
-        pos_pols = [PidPosPolicy(dt, 10, target_acc, np.inf) for target_acc in target_accs]
-        return vel_pols + pos_pols
-    elif mode == "interp_10":
-        target_vels = np.linspace(10, 12, num=5)
-        vel_pols = [PidVelPolicy(dt, target_vel) for target_vel in target_vels]
-        target_accs = np.linspace(0, 4, num=5)
+        vel_pols = [PidVelPolicy(dt) for _ in range(5)]
+        target_accs = np.random.uniform(3.9, 4, size=5)
         pos_pols = [PidPosPolicy(dt, 10, target_acc, np.inf) for target_acc in target_accs]
         return vel_pols + pos_pols
     else:
@@ -115,8 +110,8 @@ def get_human_policies(mode, dt):
 class PidSingleEnv(gym.Env):
     """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
 
-    def __init__(self, multi_env, human_policies=None, discrete: bool = False, random=True):
-        self.multi_env = multi_env
+    def __init__(self, human_policies=None, discrete: bool = False, random=True, **kwargs):
+        self.multi_env = gym.make("Merging-v1", **kwargs)
         self.human_policies = human_policies
         self.discrete = discrete
         self.random = random
@@ -157,20 +152,19 @@ class PidSingleEnv(gym.Env):
 
 
 @gin.configurable
-def make_single_env(name="Merging-v1", human_mode=None, **kwargs):
-    multi_env = gym.make(name)
+def make_single_env(human_mode=None, **kwargs):
     if human_mode is not None:
         assert "human_policies" not in kwargs, "Set one of human_mode or human_policies."
-        human_policies = get_human_policies(human_mode, multi_env.dt)
+        human_policies = get_human_policies(human_mode, 0.1)
         kwargs["human_policies"] = human_policies
     else:
         assert "human_policies" in kwargs, "Set one of human_mode or human_policies."
-    env = PidSingleEnv(multi_env, **kwargs)
+    env = PidSingleEnv(**kwargs)
     return env
 
 
 def main():
-    env = make_single_env(name="Merging-v1")
+    env = make_single_env()
     done = False
     obs = env.reset()
     env.render()

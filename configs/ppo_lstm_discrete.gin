@@ -9,3 +9,4 @@ PPO2.ent_coef = 1e-2
 VecNormalize.norm_reward = True
 VecNormalize.gamma = 0.995
 make_single_env.discrete = True
+make_single_env.random_initial = True

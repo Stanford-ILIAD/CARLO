@@ -1,6 +1,6 @@
 import time
 import pygame
-from single_agent_env import make_single_env
+from single_agent_env import make_single_env, PidVelPolicy
 
 LEFT_Y_AXIS = 1
 RIGHT_X_AXIS = 3
@@ -12,15 +12,15 @@ def main():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     joystick = joysticks[0]
     joystick.init()
-    env = make_single_env(human_mode="fixed_1")
-    for _ in range(1):
+    env = make_single_env(human_policies=[PidVelPolicy(0.1)], random_initial=True)
+    print("Starting in 5!")
+    for _ in range(10):
         done = False
         obs = env.reset()
         env.render()
         episode_data = []
         i = 0
         ret = 0
-        print("Starting in 5!")
         time.sleep(5)
         while not done:
             pygame.event.pump()

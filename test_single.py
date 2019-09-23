@@ -31,14 +31,15 @@ def main():
     state_history = np.load(os.path.join(local_dir, state_path))
     _done_history = np.load(os.path.join(local_dir, done_path))
     multi_env = gym.make("Merging-v1")
-    multi_env.reset()
-    frames = [multi_env.render(mode="rgb_array")]
-    for state in state_history[:, 0]:
-        multi_env.world.state = state
-        multi_env.update_text()
-        frames.append(multi_env.render(mode="rgb_array"))
-    clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
-    clip.write_videofile(os.path.join('.', "eval.mp4"))
+    for i in range(state_history.shape[1]):
+        multi_env.reset()
+        frames = [multi_env.render(mode="rgb_array")]
+        for state in state_history[:, i, :]:
+            multi_env.world.state = state
+            multi_env.update_text()
+            frames.append(multi_env.render(mode="rgb_array"))
+        clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
+        clip.write_videofile(os.path.join('.', "eval{}.mp4".format(i)))
 
 
 if __name__ == "__main__":

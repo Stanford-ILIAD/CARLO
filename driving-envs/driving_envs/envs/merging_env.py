@@ -185,6 +185,7 @@ class MergingEnv2(gym.Env):
         height: int = 120,
         ctrl_cost_weight: float = 0.0,
         time_limit: int = 60,
+        random_initial: bool = False,
     ):
         super(MergingEnv2, self).__init__()
         self.dt, self.width, self.height = dt, width, height
@@ -194,6 +195,7 @@ class MergingEnv2(gym.Env):
         self.buildings, self.cars = [], {}
         self._ctrl_cost_weight = ctrl_cost_weight
         self.time_limit = time_limit
+        self.randomize_initial_state = random_initial
 
     def step(self, action: np.ndarray):
         self.step_num += 1
@@ -239,9 +241,13 @@ class MergingEnv2(gym.Env):
             Building(Point(91.5, 60), Point(57, 120), "gray80"),
             Building(Point(62, 90), Point(2, 60), "gray80"),
         ]
+        h_y, r_y = 5, 5
+        if self.randomize_initial_state:
+            h_y = np.random.uniform(4, 6)
+            r_y = np.random.uniform(4, 6)
         self.cars = {
-            "H": Car(Point(58.5, 5), np.pi / 2),
-            "R": Car(Point(61.5, 5), np.pi / 2, "blue"),
+            "H": Car(Point(58.5, h_y), np.pi / 2),
+            "R": Car(Point(61.5, r_y), np.pi / 2, "blue"),
         }
         for building in self.buildings:
             self.world.add(building)
@@ -249,8 +255,12 @@ class MergingEnv2(gym.Env):
         # the concatenated state and action representation.
         self.world.add(self.cars["H"])
         self.world.add(self.cars["R"])
-        self.cars["H"].velocity = Point(0, 10)
-        self.cars["R"].velocity = Point(0, 10)
+        h_yvel, r_yvel = 10, 10
+        if self.randomize_initial_state:
+            h_yvel = np.random.uniform(9.5, 10.5)
+            r_yvel = np.random.uniform(9.5, 10.5)
+        self.cars["H"].velocity = Point(0, h_yvel)
+        self.cars["R"].velocity = Point(0, r_yvel)
         self.step_num = 0
         self.world.add(self.r_speed)
         self.world.add(self.h_speed)
