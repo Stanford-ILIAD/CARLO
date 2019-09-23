@@ -47,7 +47,7 @@ def train(
     human_policies = get_human_policies(human_mode, 0.1)
     if nonreplace:
         assert num_envs == len(human_policies)
-        env_fns = [lambda: make_single_env(human_policies=[human_pol]) for human_pol in human_policies]
+        env_fns = [lambda: make_single_env(human_policies=[h_pol]) for h_pol in human_policies]
     else:
         env_fns = num_envs * [lambda: make_single_env(human_policies=human_policies)]
     env = gin_VecNormalize(SubprocVecEnv(env_fns))

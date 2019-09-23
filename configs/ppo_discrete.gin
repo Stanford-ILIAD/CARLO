@@ -1,5 +1,7 @@
 train.num_envs = 8
 train.timesteps = 500000
+train.human_mode = "random_10"
+train.eval_save_period=50
 PPO2.gamma = 0.995
 PPO2.n_steps = 60
 PPO2.ent_coef = 1e-2

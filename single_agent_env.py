@@ -96,10 +96,10 @@ def get_human_policies(mode, dt):
         return [PidVelPolicy(dt, 10)]
     elif mode == "fixed_2":
         return [PidPosPolicy(dt, 10, 3.5, np.inf), PidVelPolicy(dt, 10)]
-    elif mode == "random_8":
-        target_vels = 2 * np.random.rand(4) + 10  # 4 samples from Uniform([10, 12])
+    elif mode == "random_10":
+        target_vels = 2 * np.random.rand(5) + 10  # 5 samples from Uniform([10, 12])
         vel_pols = [PidVelPolicy(dt, target_vel) for target_vel in target_vels]
-        target_accs = 4 * np.random.rand(4)  # 4 samples from Uniform([0, 4])
+        target_accs = 4 * np.random.rand(5)  # 5 samples from Uniform([0, 4])
         pos_pols = [PidPosPolicy(dt, 10, target_acc, np.inf) for target_acc in target_accs]
         return vel_pols + pos_pols
     else:
