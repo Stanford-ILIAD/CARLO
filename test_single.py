@@ -25,15 +25,17 @@ def main():
     print("Using best step: {}.".format(best_step))
     state_path = "ppo_driving/eval{}/state_history.npy".format(best_step)
     done_path = "ppo_driving/eval{}/done_history.npy".format(best_step)
-    files = run.files([state_path, done_path])
-    [f.download(root=local_dir, replace=True) for f in files.objects]
+    state_file, done_file = run.file(state_path), run.file(done_path)
+    state_file.download(root=local_dir, replace=True)
+    done_file.download(root=local_dir, replace=True)
     state_history = np.load(os.path.join(local_dir, state_path))
-    done_history = np.load(os.path.join(local_dir, state_path))
+    _done_history = np.load(os.path.join(local_dir, done_path))
     multi_env = gym.make("Merging-v1")
     multi_env.reset()
     frames = [multi_env.render(mode="rgb_array")]
     for state in state_history[:, 0]:
         multi_env.world.state = state
+        multi_env.update_text()
         frames.append(multi_env.render(mode="rgb_array"))
     clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
     clip.write_videofile(os.path.join('.', "eval.mp4"))

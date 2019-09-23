@@ -1,5 +1,5 @@
 import math
-from typing import Union
+from typing import Text, Union
 import numpy as np
 from driving_envs.geometry import Point, Rectangle, Circle
 import copy
@@ -225,3 +225,14 @@ class CircleEntity(Entity):
 
     def buildGeometry(self):
         self.obj = Circle(self.center, self.radius)
+
+
+class TextEntity(Entity):
+    def __init__(self, center: Point, **kwargs):
+        heading = 0
+        super(TextEntity, self).__init__(center, heading, movable=False, **kwargs)
+        self.text = ""
+
+    def buildGeometry(self):
+        # Represent text geometry as a tiny circle. Not accurate.
+        self.obj = Circle(self.center, 0.01)

@@ -1,5 +1,5 @@
 from driving_envs.graphics import *
-from driving_envs.entities import RectangleEntity, CircleEntity
+from driving_envs.entities import RectangleEntity, CircleEntity, TextEntity
 
 
 class Visualizer:
@@ -33,7 +33,19 @@ class Visualizer:
 
         # Add the updated movable agents (and the unmovable ones if they were not rendered before)
         for agent in agents:
-            if agent.movable or not self.visualized_imgs:
+            if isinstance(agent, TextEntity):
+                img = Text(
+                    Point(
+                        self.ppm * agent.center.x,
+                        self.display_height - self.ppm * agent.center.y,
+                    ),
+                    agent.text,
+                )
+                img.setSize(15)
+                img.draw(self.win)
+                # TODO(allanz): Hack: set movable=True so text is erased each iteration.
+                new_visualized_imgs.append({"movable": True, "graphics": img})
+            elif agent.movable or not self.visualized_imgs:
                 if isinstance(agent, RectangleEntity):
                     C = [self.ppm * c for c in agent.corners]
                     img = Polygon([Point(c.x, self.display_height - c.y) for c in C])

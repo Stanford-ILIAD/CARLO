@@ -8,6 +8,7 @@ from PIL import Image
 import numpy as np
 import scipy.special
 from driving_envs.world import World
+from driving_envs.entities import TextEntity
 from driving_envs.agents import Car, Building, Pedestrian, Painting
 from driving_envs.geometry import Point
 
@@ -103,7 +104,7 @@ class MergingEnv(gym.Env):
         width: int = 120,
         height: int = 120,
         ctrl_cost_weight: float = 0.0,
-        time_limit: int = 200
+        time_limit: int = 200,
     ):
         super(MergingEnv, self).__init__()
         self.dt, self.width, self.height = dt, width, height
@@ -136,7 +137,7 @@ class MergingEnv(gym.Env):
             done = True
         if done:
             for car_name, car in self.cars.items():
-                reward[car_name] += 200*((car.y/self.height)**4)
+                reward[car_name] += 200 * ((car.y / self.height) ** 4)
         return self.world.state, reward, done, {}
 
     def _get_car_reward(self, name: Text):
@@ -183,11 +184,13 @@ class MergingEnv2(gym.Env):
         width: int = 120,
         height: int = 120,
         ctrl_cost_weight: float = 0.0,
-        time_limit: int = 60
+        time_limit: int = 60,
     ):
         super(MergingEnv2, self).__init__()
         self.dt, self.width, self.height = dt, width, height
         self.world = World(self.dt, width=width, height=height, ppm=6)
+        self.r_speed = TextEntity(Point(75, 5))
+        self.h_speed = TextEntity(Point(75, 10))
         self.buildings, self.cars = [], {}
         self._ctrl_cost_weight = ctrl_cost_weight
         self.time_limit = time_limit
@@ -209,17 +212,22 @@ class MergingEnv2(gym.Env):
                     done = True
             if car_name == "R" and car.y >= self.height or car.y <= 0:
                 raise ValueError("Car went out of bounds!")
+        self.update_text()
         if self.step_num >= self.time_limit:
             done = True
         return self._get_obs(), reward, done, {}
+
+    def update_text(self):
+        self.r_speed.text = "R speed: {:.1f}".format(self.cars["R"].speed)
+        self.h_speed.text = "H speed: {:.1f}".format(self.cars["H"].speed)
 
     def _get_obs(self):
         return np.concatenate((self.world.state[:6], self.world.state[7:13]))
 
     def _get_car_reward(self, name: Text):
         car = self.cars[name]
-        vel_rew = .1 * car.velocity.y
-        right_lane_cost = .3 * expit((car.y - 60)/5) * max(car.x - 59, 0)
+        vel_rew = 0.1 * car.velocity.y
+        right_lane_cost = 0.3 * expit((car.y - 60) / 5) * max(car.x - 59, 0)
         # right_lane_cost = .1 * max(car.x - 59, 0)
         control_cost = np.square(car.inputAcceleration)
         return vel_rew - right_lane_cost - self._ctrl_cost_weight * control_cost
@@ -244,12 +252,15 @@ class MergingEnv2(gym.Env):
         self.cars["H"].velocity = Point(0, 10)
         self.cars["R"].velocity = Point(0, 10)
         self.step_num = 0
+        self.world.add(self.r_speed)
+        self.world.add(self.h_speed)
+        self.update_text()
         return self._get_obs()
 
     def render(self, mode="human"):
         self.world.render()
         if mode == "rgb_array":
             cnv = self.world.visualizer.win
-            ps = cnv.postscript(colormode = 'color')
-            img = Image.open(io.BytesIO(ps.encode('utf-8')))
+            ps = cnv.postscript(colormode="color")
+            img = Image.open(io.BytesIO(ps.encode("utf-8")))
             return np.array(img)

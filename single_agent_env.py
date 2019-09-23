@@ -102,6 +102,12 @@ def get_human_policies(mode, dt):
         target_accs = 4 * np.random.rand(5)  # 5 samples from Uniform([0, 4])
         pos_pols = [PidPosPolicy(dt, 10, target_acc, np.inf) for target_acc in target_accs]
         return vel_pols + pos_pols
+    elif mode == "interp_10":
+        target_vels = np.linspace(10, 12, num=5)
+        vel_pols = [PidVelPolicy(dt, target_vel) for target_vel in target_vels]
+        target_accs = np.linspace(0, 4, num=5)
+        pos_pols = [PidPosPolicy(dt, 10, target_acc, np.inf) for target_acc in target_accs]
+        return vel_pols + pos_pols
     else:
         raise ValueError("Unrecognized mode {}".format(mode))
 
