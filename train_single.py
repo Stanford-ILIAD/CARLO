@@ -1,8 +1,11 @@
 """Train with PPO."""
 
+import collections
 import copy
 import csv
+from functools import partial
 import os
+import pickle
 import shutil
 import time
 import gin
@@ -47,7 +50,9 @@ def train(
     human_policies = get_human_policies(human_mode, 0.1)
     if nonreplace:
         assert num_envs == len(human_policies)
-        env_fns = [lambda: make_single_env(human_policies=[h_pol]) for h_pol in human_policies]
+        env_fns = [
+            partial(make_single_env, human_policies=[h_pol]) for h_pol in human_policies
+        ]
     else:
         env_fns = num_envs * [lambda: make_single_env(human_policies=human_policies)]
     env = gin_VecNormalize(SubprocVecEnv(env_fns))
@@ -55,11 +60,13 @@ def train(
         eval_human_policies = get_human_policies(human_mode, 0.1)
     else:
         eval_human_policies = copy.deepcopy(human_policies)
-    eval_env_fns = num_envs * [
-        lambda: make_single_env(human_policies=eval_human_policies, random=False)
-    ]
-    # Get true (un-normalized) rewards out from eval env.
-    eval_env = VecNormalize(DummyVecEnv(eval_env_fns), training=False, norm_reward=False)
+    eval_envs = []
+    for human_policy in eval_human_policies:
+        eval_env_fns = num_envs * [partial(make_single_env, human_policies=[human_policy])]
+        # Get true (un-normalized) rewards out from eval env.
+        eval_envs.append(
+            VecNormalize(DummyVecEnv(eval_env_fns), training=False, norm_reward=False)
+        )
     policy = MlpLnLstmPolicy if recurrent else MlpPolicy
     model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
     op_config_path = os.path.join(experiment_name, "operative_config.gin")
@@ -70,34 +77,34 @@ def train(
         # Need to transfer running avgs from env->eval_env
         model.save(os.path.join(eval_dir, "model.pkl"))
         env.save_running_average(eval_dir)
-        eval_env.load_running_average(eval_dir)
-        obs = eval_env.reset()
-        task_idcs = np.zeros(num_envs, dtype=np.int64)
-        num_eval_tasks = len(eval_env.venv.envs[0].human_policies)
-        rets, state_history = np.zeros((num_eval_tasks, num_envs)), []
-        state, dones = None, [False for _ in range(num_envs)]
-        action_history, reward_history, done_history = [], [], []
-        while np.any(task_idcs < num_eval_tasks):
-            state_history.append(
-                [inner_env.multi_env.world.state for inner_env in eval_env.venv.envs]
-            )
-            action, state = model.predict(obs, state=state, mask=dones, deterministic=True)
-            next_obs, rewards, dones, _info = eval_env.step(action)
-            action_history.append(action)
-            reward_history.append(rewards)
-            done_history.append(dones)
-            for env_idx, reward in enumerate(rewards):
-                task_idx = task_idcs[env_idx]
-                if task_idx < num_eval_tasks:
-                    rets[task_idx, env_idx] += reward
-            task_idcs += dones.astype(np.int64)
-            obs = next_obs
-        state_history, done_history = np.array(state_history), np.array(done_history)
-        np.save(os.path.join(eval_dir, "state_history.npy"), state_history)
-        np.save(os.path.join(eval_dir, "done_history.npy"), done_history)
-        np.save(os.path.join(eval_dir, "action_history.npy"), action_history)
-        np.save(os.path.join(eval_dir, "reward_history.npy"), reward_history)
-        return np.mean(rets, axis=-1)  # Average along env dimension of rets array.
+        for eval_env in eval_envs:
+            eval_env.load_running_average(eval_dir)
+        task_rets = []
+        data_dicts = []
+        for eval_env in eval_envs:
+            obs = eval_env.reset()
+            rets = np.zeros(num_envs)
+            state, dones = None, [False for _ in range(num_envs)]
+            ever_done = np.zeros((num_envs,), dtype=np.bool)
+            # Maps env_idx -> (state, action, reward, done) tuples
+            task_data = collections.defaultdict(list)
+            while not np.all(ever_done):
+                true_states = [
+                    inner_env.multi_env.world.state for inner_env in eval_env.venv.envs
+                ]
+                action, state = model.predict(obs, state=state, mask=dones, deterministic=True)
+                next_obs, rewards, dones, _info = eval_env.step(action)
+                for env_idx, data in enumerate(zip(true_states, action, rewards, dones)):
+                    if not ever_done[env_idx]:
+                        task_data[env_idx].append(data)
+                        rets[env_idx] += rewards[env_idx]
+                ever_done = np.logical_or(ever_done, dones)
+                obs = next_obs
+            task_rets.append(np.mean(rets))
+            data_dicts.append(task_data)
+        with open(os.path.join(eval_dir, "data_dicts.pkl"), "wb") as f:
+            pickle.dump(data_dicts, f)
+        return task_rets
 
     n_steps = 0  # pylint: disable=unused-variable
 
