@@ -9,7 +9,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.initializers import Constant
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("folder", "demos", "Folder to save file in.")
+flags.DEFINE_string("folder", "demos", "Folder to read data from.")
 flags.DEFINE_string("save_name", "model.h5", "Output weights file name.")
 
 
