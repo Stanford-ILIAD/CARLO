@@ -21,6 +21,7 @@ def main(_argv):
         states.append(filez["states"])
         actions.append(filez["actions"])
     states = np.concatenate(states, axis=0)
+    states = np.concatenate((states[:, :6], states[:, 7:13]), axis=-1)
     actions = np.concatenate(actions, axis=0)
     h_actions = actions[:, :2]
 
@@ -30,11 +31,13 @@ def main(_argv):
     action_std = np.std(h_actions, axis=0).tolist()
 
     def normalize_obs(obs, mean=0, std=1):
+        import tensorflow as tf
         mean = tf.convert_to_tensor(mean, dtype=tf.float32)
         std = tf.convert_to_tensor(std, dtype=tf.float32)
         return (obs - mean) / (1e-6 + std)
 
     def normalize_action(act, mean=0, std=1):
+        import tensorflow as tf
         mean = tf.convert_to_tensor(mean, dtype=tf.float32)
         std = tf.convert_to_tensor(std, dtype=tf.float32)
         return act * std + mean
@@ -44,8 +47,8 @@ def main(_argv):
         layers.Lambda(
             normalize_obs,
             arguments={"mean": state_mean, "std": state_std},
-            input_shape=(14,),
-            output_shape=(14,),
+            input_shape=(12,),
+            output_shape=(12,),
         )
     )
     model.add(layers.Dense(64, activation="relu"))
@@ -58,6 +61,7 @@ def main(_argv):
     model.fit(states, h_actions, epochs=20, batch_size=32)
     model.save(FLAGS.save_name)
     del model
+    # Checks that saving worked.
     model = load_model(FLAGS.save_name)
     model.evaluate(states, h_actions)
 

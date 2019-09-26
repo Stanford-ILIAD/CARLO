@@ -1,6 +1,6 @@
 import time
 import pygame
-from single_agent_env import make_single_env, PidVelPolicy
+from single_agent_env import make_single_env, PidVelPolicy, BCPolicy
 
 LEFT_Y_AXIS = 1
 RIGHT_X_AXIS = 3
@@ -12,7 +12,10 @@ def main():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     joystick = joysticks[0]
     joystick.init()
-    env = make_single_env(human_policies=[PidVelPolicy(0.1)], random_initial=True)
+    env = make_single_env(
+        human_policies=[BCPolicy("bc_weights/typeA.h5"), BCPolicy("bc_weights/typeB.h5")],
+        random_initial=True,
+    )
     print("Starting in 5!")
     for _ in range(10):
         done = False

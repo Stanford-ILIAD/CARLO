@@ -7,6 +7,7 @@ import gym
 from gym import spaces
 import driving_envs  # pylint: disable=unused-import
 import numpy as np
+from tensorflow.keras.models import load_model
 
 
 class PidPosPolicy:
@@ -59,11 +60,7 @@ class PidPosPolicy:
 class PidVelPolicy:
     """PID controller that maintains a fixed velocity."""
 
-    def __init__(
-        self,
-        dt: float,
-        params: Tuple[float, float, float] = (3.0, 1.0, 6.0),
-    ):
+    def __init__(self, dt: float, params: Tuple[float, float, float] = (3.0, 1.0, 6.0)):
         self._target_vel = None
         self.previous_error = 0
         self.integral = 0
@@ -91,6 +88,17 @@ class PidVelPolicy:
 
     def __str__(self):
         return "PidVelPolicy({})".format(self.dt)
+
+
+class BCPolicy:
+    def __init__(self, path):
+        self.model = load_model(path)
+
+    def action(self, obs):
+        return self.model.predict(obs[None])[0]
+
+    def reset(self):
+        pass
 
 
 def get_human_policies(mode, dt):
@@ -131,7 +139,7 @@ class PidSingleEnv(gym.Env):
             action = self.int_to_tuple[action]
             action = np.array([self.binner[i][a] for i, a in enumerate(action)])
         processed_action = np.array((action[0] * 0.1, action[1] * 4))
-        h_action = self._pid_human.action(self.previous_obs)
+        h_action = self._human_pol.action(self.previous_obs)
         multi_action = np.concatenate((h_action, processed_action))
         obs, rew, done, debug = self.multi_env.step(multi_action)
         self.previous_obs = obs
@@ -139,9 +147,9 @@ class PidSingleEnv(gym.Env):
 
     def reset(self):
         if self.random:
-            self._pid_human = np.random.choice(self.human_policies)
+            self._human_pol = np.random.choice(self.human_policies)
         else:
-            self._pid_human = self.human_policies[self._policy_idx]
+            self._human_pol = self.human_policies[self._policy_idx]
             self._policy_idx = (self._policy_idx + 1) % len(self.human_policies)
         obs = self.multi_env.reset()
         self.previous_obs = obs
