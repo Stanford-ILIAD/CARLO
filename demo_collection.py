@@ -27,7 +27,7 @@ def main(_argv):
         raise Exception("No joysticks found.")
     for joystick in joysticks:
         joystick.init()
-    multi_env = gym.make("Merging-v1", random_initial=True)
+    multi_env = gym.make("Merging-v0", random_initial=True)
     print("Starting in 3!")
     done = False
     _obs = multi_env.reset()

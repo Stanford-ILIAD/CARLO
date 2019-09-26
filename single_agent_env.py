@@ -119,7 +119,7 @@ class PidSingleEnv(gym.Env):
     """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
 
     def __init__(self, human_policies=None, discrete: bool = False, random=True, **kwargs):
-        self.multi_env = gym.make("Merging-v1", **kwargs)
+        self.multi_env = gym.make("Merging-v0", **kwargs)
         self.human_policies = human_policies
         self.discrete = discrete
         self.random = random
