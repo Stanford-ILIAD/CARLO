@@ -1,4 +1,4 @@
-import csv
+"""Generate videos from state history in wandb runs."""
 import os
 import gym
 from moviepy.editor import ImageSequenceClip
@@ -13,6 +13,7 @@ flags.DEFINE_string("run_id", None, "Wandb experiment run id.")
 
 
 def main():
+    """Generate video from state history."""
     api = wandb.Api()
     run_path = "ayzhong/hr_adaptation/" + FLAGS.run_id
     local_dir = "/tmp/{}".format(os.path.basename(run_path))
@@ -29,17 +30,24 @@ def main():
     state_file.download(root=local_dir, replace=True)
     done_file.download(root=local_dir, replace=True)
     state_history = np.load(os.path.join(local_dir, state_path))
-    _done_history = np.load(os.path.join(local_dir, done_path))
-    multi_env = gym.make("Merging-v1")
+    done_history = np.load(os.path.join(local_dir, done_path))
+    os.makedirs("vids")
+    multi_env = gym.make("Merging-v0")
     for i in range(state_history.shape[1]):
         multi_env.reset()
-        frames = [multi_env.render(mode="rgb_array")]
-        for state in state_history[:, i, :]:
+        frames = []
+        episode_number = 0
+        for j, state in enumerate(state_history[:, i, :]):
+            is_done = done_history[j, i]
             multi_env.world.state = state
             multi_env.update_text()
             frames.append(multi_env.render(mode="rgb_array"))
-        clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
-        clip.write_videofile(os.path.join('.', "eval{}.mp4".format(i)))
+            if is_done:
+                clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
+                clip.write_videofile("vids/eval{}_{}.mp4".format(i, episode_number))
+                multi_env.reset()
+                frames = []
+                episode_number += 1
 
 
 if __name__ == "__main__":

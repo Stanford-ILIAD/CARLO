@@ -1,6 +1,7 @@
+"""Joystick control the robot car."""
 import time
 import pygame
-from single_agent_env import make_single_env, PidVelPolicy, BCPolicy
+from single_agent_env import make_single_env, BCPolicy
 
 LEFT_Y_AXIS = 1
 RIGHT_X_AXIS = 3

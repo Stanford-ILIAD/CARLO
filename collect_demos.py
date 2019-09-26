@@ -1,10 +1,11 @@
+"Collect demonstrations from 2 joystick controllers."
 import os
 import time
 from absl import app, flags
 import gym
-import driving_envs  # pylint: disable=unused-import
 import numpy as np
 import pygame
+import driving_envs  # pylint: disable=unused-import
 
 LEFT_X_AXIS = 0
 LEFT_Y_AXIS = 1
@@ -23,8 +24,8 @@ def main(_argv):
     pygame.init()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
-    if not joysticks:
-        raise Exception("No joysticks found.")
+    if len(joysticks) != 2:
+        raise Exception("Need 2 joysticks connected")
     for joystick in joysticks:
         joystick.init()
     multi_env = gym.make("Merging-v0", random_initial=True)
@@ -38,24 +39,14 @@ def main(_argv):
     while not done:
         state = multi_env.world.state
         pygame.event.pump()
-        if len(joysticks) == 1:
-            r_action = (
-                -0.05 * joysticks[0].get_axis(RIGHT_X_AXIS),
-                -4 * joysticks[0].get_axis(RIGHT_Y_AXIS),
-            )
-            h_action = (
-                -0.05 * joysticks[0].get_axis(LEFT_X_AXIS),
-                -4 * joysticks[0].get_axis(LEFT_Y_AXIS),
-            )
-        else:
-            r_action = (
-                -0.05 * joysticks[0].get_axis(RIGHT_X_AXIS),
-                -4 * joysticks[0].get_axis(LEFT_Y_AXIS),
-            )
-            h_action = (
-                -0.05 * joysticks[1].get_axis(RIGHT_X_AXIS),
-                -4 * joysticks[1].get_axis(LEFT_Y_AXIS),
-            )
+        r_action = (
+            -0.05 * joysticks[0].get_axis(RIGHT_X_AXIS),
+            -4 * joysticks[0].get_axis(LEFT_Y_AXIS),
+        )
+        h_action = (
+            -0.05 * joysticks[1].get_axis(RIGHT_X_AXIS),
+            -4 * joysticks[1].get_axis(LEFT_Y_AXIS),
+        )
         action = np.array(h_action + r_action)
         _obs, _rew, done, _debug = multi_env.step(action)
         demonstration_data.append((state, action))

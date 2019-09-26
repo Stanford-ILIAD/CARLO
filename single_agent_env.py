@@ -1,17 +1,17 @@
+"""Defines a single agent env where the robot is the only agent (human is part of env)."""
 import itertools
-import math
 import time
-from typing import List, Optional, Tuple
+from typing import Tuple
 import gin
 import gym
 from gym import spaces
-import driving_envs  # pylint: disable=unused-import
 import numpy as np
 from tensorflow.keras.models import load_model
+import driving_envs  # pylint: disable=unused-import
 
 
 class PidPosPolicy:
-    """PID controller that maintains fixed distance in front of R."""
+    """PID controller for H that maintains fixed distance in front of R."""
 
     def __init__(
         self,
@@ -58,7 +58,7 @@ class PidPosPolicy:
 
 
 class PidVelPolicy:
-    """PID controller that maintains a fixed velocity."""
+    """PID controller for H that maintains its initial velocity."""
 
     def __init__(self, dt: float, params: Tuple[float, float, float] = (3.0, 1.0, 6.0)):
         self._target_vel = None
@@ -91,6 +91,8 @@ class PidVelPolicy:
 
 
 class BCPolicy:
+    """Takes actions according to a pre-trained behavior cloning model."""
+
     def __init__(self, path):
         self.model = load_model(path)
 
@@ -102,6 +104,7 @@ class BCPolicy:
 
 
 def get_human_policies(mode, dt):
+    """Helper that returns a list of human policies based on mode."""
     if mode == "fixed_1":
         return [PidVelPolicy(dt)]
     elif mode == "fixed_2":
@@ -111,12 +114,14 @@ def get_human_policies(mode, dt):
         target_accs = np.random.uniform(3.9, 4, size=5)
         pos_pols = [PidPosPolicy(dt, 10, target_acc, np.inf) for target_acc in target_accs]
         return vel_pols + pos_pols
+    elif mode == "bc_2":
+        return [BCPolicy("bc_weights/typeA.h5"), BCPolicy("bc_weights/typeB.h5")]
     else:
         raise ValueError("Unrecognized mode {}".format(mode))
 
 
 class PidSingleEnv(gym.Env):
-    """Wrapper that turns multi-agent driving env into single agent, using simulated human."""
+    """Wrapper that turns multi-agent driving env into a single agent env (the robot)."""
 
     def __init__(self, human_policies=None, discrete: bool = False, random=True, **kwargs):
         self.multi_env = gym.make("Merging-v0", **kwargs)
@@ -124,6 +129,8 @@ class PidSingleEnv(gym.Env):
         self.discrete = discrete
         self.random = random
         self._policy_idx = 0
+        self._human_pol = None
+        self.previous_obs = None
         if discrete:
             self.num_bins = (5, 5)
             self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
@@ -161,6 +168,7 @@ class PidSingleEnv(gym.Env):
 
 @gin.configurable
 def make_single_env(human_mode=None, **kwargs):
+    """Helper function to create the human policies and then the single agent env."""
     if human_mode is not None:
         assert "human_policies" not in kwargs, "Set one of human_mode or human_policies."
         human_policies = get_human_policies(human_mode, 0.1)
@@ -172,6 +180,7 @@ def make_single_env(human_mode=None, **kwargs):
 
 
 def main():
+    """Test that the single agent env works."""
     env = make_single_env()
     done = False
     obs = env.reset()

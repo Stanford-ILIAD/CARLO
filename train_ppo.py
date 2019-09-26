@@ -1,4 +1,4 @@
-"""Train with PPO."""
+"""PPO training code."""
 
 import collections
 import copy
@@ -38,10 +38,11 @@ def train(
     timesteps=gin.REQUIRED,
     recurrent=False,
     eval_save_period=100,
-    human_mode="fixed_2",
+    human_mode="bc_2",
     split_train_eval=True,
     nonreplace=False,
 ):
+    """Train and eval ppo agent."""
     if os.path.exists(experiment_name):
         shutil.rmtree(experiment_name)
     os.makedirs(experiment_name)

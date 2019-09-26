@@ -1,2 +1,2 @@
 [TYPECHECK]
-generated-members=torch.*
+generated-members=torch.*,pygame.*,tensorflow.*
