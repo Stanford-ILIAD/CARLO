@@ -1,6 +1,0 @@
-train.num_envs = 7
-train.timesteps = 5000000
-PPO2.gamma = 0.999
-PPO2.n_steps = 300
-PPO2.ent_coef = 1e-2
-VecNormalize.norm_reward = False

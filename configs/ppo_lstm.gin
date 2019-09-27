@@ -1,8 +1,0 @@
-train.num_envs = 8
-train.timesteps = 1000000
-train.recurrent = True
-PPO2.gamma = 0.999
-PPO2.n_steps = 150
-PPO2.ent_coef = 1e-3
-VecNormalize.norm_reward = False
-VecNormalize.gamma = .999
