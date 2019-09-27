@@ -3,12 +3,12 @@
 import collections
 import copy
 import csv
-from functools import partial
 import os
 import pickle
 import shutil
 import time
 import gin
+import gym
 import numpy as np
 from stable_baselines import PPO2
 from stable_baselines.common.policies import MlpPolicy, MlpLnLstmPolicy
@@ -16,7 +16,7 @@ from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines.common.vec_env.vec_normalize import VecNormalize
 from tensorflow import flags
 import wandb
-from single_agent_env import make_single_env, get_human_policies
+from single_agent_env import get_human_policies, VecSingleEnv
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("name", "ppo_driving", "Name of experiment")
@@ -40,7 +40,6 @@ def train(
     eval_save_period=100,
     human_mode="bc_2",
     split_train_eval=True,
-    nonreplace=False,
 ):
     """Train and eval ppo agent."""
     if os.path.exists(experiment_name):
@@ -49,24 +48,21 @@ def train(
     rets_path = os.path.join(experiment_name, "eval.csv")
     wandb.save(experiment_name)
     human_policies = get_human_policies(human_mode, 0.1)
-    if nonreplace:
-        assert num_envs == len(human_policies)
-        env_fns = [
-            partial(make_single_env, human_policies=[h_pol]) for h_pol in human_policies
-        ]
-    else:
-        env_fns = num_envs * [lambda: make_single_env(human_policies=human_policies)]
-    env = gin_VecNormalize(SubprocVecEnv(env_fns))
+    env_fns = num_envs * [lambda: gym.make("Merging-v0")]
+    env = gin_VecNormalize(VecSingleEnv(SubprocVecEnv(env_fns), human_policies=human_policies))
     if split_train_eval:
         eval_human_policies = get_human_policies(human_mode, 0.1)
     else:
         eval_human_policies = copy.deepcopy(human_policies)
     eval_envs = []
     for human_policy in eval_human_policies:
-        eval_env_fns = num_envs * [partial(make_single_env, human_policies=[human_policy])]
         # Get true (un-normalized) rewards out from eval env.
         eval_envs.append(
-            VecNormalize(DummyVecEnv(eval_env_fns), training=False, norm_reward=False)
+            VecNormalize(
+                VecSingleEnv(DummyVecEnv(env_fns), human_policies=[human_policy]),
+                training=False,
+                norm_reward=False,
+            )
         )
     policy = MlpLnLstmPolicy if recurrent else MlpPolicy
     model = PPO2(policy, env, verbose=1, tensorboard_log=logdir)
@@ -91,7 +87,7 @@ def train(
             task_data = collections.defaultdict(list)
             while not np.all(ever_done):
                 true_states = [
-                    inner_env.multi_env.world.state for inner_env in eval_env.venv.envs
+                    inner_env.world.state for inner_env in eval_env.venv.envs
                 ]
                 action, state = model.predict(obs, state=state, mask=dones, deterministic=True)
                 next_obs, rewards, dones, _info = eval_env.step(action)

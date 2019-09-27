@@ -1,11 +1,12 @@
 """Defines a single agent env where the robot is the only agent (human is part of env)."""
-import itertools
+from itertools import product
 import time
 from typing import Tuple
 import gin
 import gym
 from gym import spaces
 import numpy as np
+from stable_baselines.common.vec_env import VecEnvWrapper, SubprocVecEnv
 from tensorflow.keras.models import load_model
 import driving_envs  # pylint: disable=unused-import
 
@@ -99,6 +100,9 @@ class BCPolicy:
     def action(self, obs):
         return self.model.predict(obs[None])[0]
 
+    def batch_action(self, obs):
+        return self.model.predict(obs)
+
     def reset(self):
         pass
 
@@ -135,7 +139,7 @@ class PidSingleEnv(gym.Env):
             self.num_bins = (5, 5)
             self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
             self.action_space = spaces.Discrete(int(np.prod(self.num_bins)))
-            self.int_to_tuple = list(itertools.product(*[range(x) for x in self.num_bins]))
+            self.int_to_tuple = list(product(*[range(x) for x in self.num_bins]))
             self.observation_space = spaces.Box(-np.inf, np.inf, shape=(12,))
         else:
             self.action_space = spaces.Box(np.array((-1.0, -1.0)), np.array((1.0, 1.0)))
@@ -150,7 +154,7 @@ class PidSingleEnv(gym.Env):
         multi_action = np.concatenate((h_action, processed_action))
         obs, rew, done, debug = self.multi_env.step(multi_action)
         self.previous_obs = obs
-        return obs, rew["R"], done, debug
+        return obs, rew, done, debug
 
     def reset(self):
         if self.random:
@@ -164,6 +168,65 @@ class PidSingleEnv(gym.Env):
 
     def render(self, mode="human"):
         return self.multi_env.render(mode=mode)
+
+
+class VecSingleEnv(VecEnvWrapper):
+    """VecEnvWrapper that turns multi-agent driving env into a single agent env (the robot)."""
+
+    def __init__(self, venv, human_policies=None):
+        VecEnvWrapper.__init__(self, venv)
+        self.human_policies = human_policies
+        num_angle_bins, num_acc_bins = 5, 5
+        self.binner = [
+            np.linspace(-0.1, 0.1, num=num_angle_bins),
+            np.linspace(-4, 4, num=num_acc_bins),
+        ]
+        self.action_space = spaces.Discrete(num_angle_bins * num_acc_bins)
+        self.int_to_tuple = list(product(range(num_angle_bins), range(num_acc_bins)))
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(12,))
+        self.previous_obs = None
+        self._env_to_human = None
+
+    def step_async(self, actions):
+        r_actions = []
+        for act in actions:
+            act_tuple = self.int_to_tuple[act]
+            r_actions.append(np.array([self.binner[i][a] for i, a in enumerate(act_tuple)]))
+        h_actions_grid = []
+        for human_pol in self.human_policies:
+            if hasattr(human_pol, "batch_action"):
+                h_actions_grid.append(human_pol.batch_action(self.previous_obs))
+            else:
+                h_actions_grid.append([human_pol.action(obs) for obs in self.previous_obs])
+        h_actions = []
+        for i in range(len(actions)):
+            h_pol_idx = self._env_to_human[i]
+            h_actions.append(h_actions_grid[h_pol_idx][i])
+        combined_actions = []
+        for h_act, r_act in zip(h_actions, r_actions):
+            combined_actions.append(np.concatenate((h_act, r_act)))
+        self.venv.step_async(combined_actions)
+
+    def step_wait(self):
+        obs, rews, news, infos = self.venv.step_wait()
+        if np.any(news):
+            for i, new in enumerate(news):
+                if new:
+                    self._env_to_human[i] = np.random.randint(len(self.human_policies))
+        self.previous_obs = obs
+        return obs, rews, news, infos
+
+    def reset(self):
+        obs = self.venv.reset()
+        env_to_human = []
+        for _ in range(len(obs)):
+            env_to_human.append(np.random.randint(len(self.human_policies)))
+        self._env_to_human = env_to_human
+        if len(np.array(obs).shape) == 1:  # for when num_cpu is 1
+            self.previous_obs = [obs]
+        else:
+            self.previous_obs = obs
+        return obs
 
 
 @gin.configurable
@@ -181,25 +244,22 @@ def make_single_env(human_mode=None, **kwargs):
 
 def main():
     """Test that the single agent env works."""
-    env = make_single_env()
-    done = False
+    env_fn = lambda: gym.make("Merging-v0")
+    human_policies = get_human_policies(mode="bc_2", dt=0.1)
+    env = VecSingleEnv(SubprocVecEnv(4 * [env_fn]), human_policies=human_policies)
     obs = env.reset()
-    env.render()
-    episode_data = []
-    i = 0
     ret = 0
-    while not done:
-        action = (0, 4)
-        next_obs, rew, done, debug = env.step(action)
+    episode_data = []
+    start_time = time.time()
+    for _ in range(60):
+        action = np.random.randint(0, 25, size=4)
+        next_obs, rew, done, _debug = env.step(action)
         ret += rew
-        del debug
         episode_data.append((obs, action, rew, next_obs, done))
         obs = next_obs
-        env.render()
-        time.sleep(env.multi_env.dt)
-        i += 1
-    print("i: {}, Return: {}".format(i, ret))
-    env.multi_env.world.close()
+    steps_per_sec = 60 / (time.time() - start_time)
+    print("Steps/sec: {:.2f}".format(steps_per_sec))
+    return
 
 
 if __name__ == "__main__":

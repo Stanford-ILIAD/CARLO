@@ -1,6 +1,7 @@
 import io
 from typing import Text
 import gym
+from gym import spaces
 from PIL import Image
 import numpy as np
 import scipy.special
@@ -22,7 +23,7 @@ class MergingEnv(gym.Env):
         height: int = 120,
         ctrl_cost_weight: float = 0.0,
         time_limit: int = 60,
-        random_initial: bool = False,
+        random_initial: bool = True,
     ):
         super(MergingEnv, self).__init__()
         self.dt, self.width, self.height = dt, width, height
@@ -33,6 +34,10 @@ class MergingEnv(gym.Env):
         self._ctrl_cost_weight = ctrl_cost_weight
         self.time_limit = time_limit
         self.randomize_initial_state = random_initial
+        self.action_space = spaces.Box(
+            np.array((-0.1, -4.0, -0.1, -4)), np.array((0.1, 4.0, 0.1, 4.0)), dtype=np.float32
+        )
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(12,))
 
     def step(self, action: np.ndarray):
         self.step_num += 1
@@ -54,7 +59,7 @@ class MergingEnv(gym.Env):
         self.update_text()
         if self.step_num >= self.time_limit:
             done = True
-        return self._get_obs(), reward, done, {}
+        return self._get_obs(), reward["R"], done, {}
 
     def update_text(self):
         self.r_speed.text = "R speed: {:.1f}".format(self.cars["R"].speed)
