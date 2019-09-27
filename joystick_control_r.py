@@ -11,11 +11,11 @@ def main():
     pygame.init()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+    assert len(joysticks) >= 1, "Need a joystick to be connected."
     joystick = joysticks[0]
     joystick.init()
     env = make_single_env(
-        human_policies=[BCPolicy("bc_weights/typeA.h5"), BCPolicy("bc_weights/typeB.h5")],
-        random_initial=True,
+        human_policies=[BCPolicy("bc_weights/typeA.h5"), BCPolicy("bc_weights/typeB.h5")]
     )
     print("Starting in 5!")
     for _ in range(10):

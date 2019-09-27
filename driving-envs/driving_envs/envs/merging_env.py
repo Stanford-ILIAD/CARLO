@@ -116,3 +116,11 @@ class MergingEnv(gym.Env):
             ps = cnv.postscript(colormode="color")
             img = Image.open(io.BytesIO(ps.encode("utf-8")))
             return np.array(img)
+
+    @property
+    def state(self):
+        return self.world.state
+
+    @state.setter
+    def state(self, value):
+        self.world.state = value
