@@ -1,4 +1,5 @@
 """Generate videos from state history in wandb runs."""
+import pickle
 import os
 import gym
 from moviepy.editor import ImageSequenceClip
@@ -24,30 +25,24 @@ def main():
     eval_df = pd.read_csv(os.path.join(local_dir, csv_path), header=None)
     best_step = int(eval_df.iloc[eval_df.iloc[:, 1].idxmax()][0])
     print("Using best step: {}.".format(best_step))
-    state_path = "ppo_driving/eval{}/state_history.npy".format(best_step)
-    done_path = "ppo_driving/eval{}/done_history.npy".format(best_step)
-    state_file, done_file = run.file(state_path), run.file(done_path)
-    state_file.download(root=local_dir, replace=True)
-    done_file.download(root=local_dir, replace=True)
-    state_history = np.load(os.path.join(local_dir, state_path))
-    done_history = np.load(os.path.join(local_dir, done_path))
+    data_dicts_path = "ppo_driving/eval{}/data_dicts.pkl".format(best_step)
+    data_dicts_file = run.file(data_dicts_path)
+    data_dicts_file.download(root=local_dir, replace=True)
+    with open(os.path.join(local_dir, data_dicts_path), "rb") as f:
+        data_dicts = pickle.load(f)
     os.makedirs("vids")
     multi_env = gym.make("Merging-v0")
-    for i in range(state_history.shape[1]):
-        multi_env.reset()
-        frames = []
-        episode_number = 0
-        for j, state in enumerate(state_history[:, i, :]):
-            is_done = done_history[j, i]
-            multi_env.world.state = state
-            multi_env.update_text()
-            frames.append(multi_env.render(mode="rgb_array"))
-            if is_done:
-                clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
-                clip.write_videofile("vids/eval{}_{}.mp4".format(i, episode_number))
-                multi_env.reset()
-                frames = []
-                episode_number += 1
+    for task_idx, data_dict in enumerate(data_dicts):
+        for env_idx, transitions in data_dict.items():
+            multi_env.reset()
+            frames = []
+            for state, _action, _rew, done in transitions:
+                multi_env.world.state = state
+                multi_env.update_text()
+                frames.append(multi_env.render(mode="rgb_array"))
+            assert done, "Done should be True by end of transitions."
+            clip = ImageSequenceClip(frames, fps=int(1 / multi_env.dt))
+            clip.write_videofile("vids/task{}_{}.mp4".format(task_idx, env_idx))
 
 
 if __name__ == "__main__":
