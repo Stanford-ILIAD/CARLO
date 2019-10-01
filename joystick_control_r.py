@@ -5,10 +5,7 @@ import gym
 from stable_baselines.common.vec_env import DummyVecEnv
 import driving_envs  # pylint: disable=unused-import
 from single_agent_env import VecSingleEnv, BCPolicy
-
-
-LEFT_Y_AXIS = 1
-RIGHT_X_AXIS = 3
+from joystick_utils import LEFT_Y_AXIS, RIGHT_X_AXIS, TURN_SCALING, ACC_SCALING
 
 
 def main():
@@ -33,14 +30,13 @@ def main():
         while not done:
             pygame.event.pump()
             action = (
-                -0.05 * joystick.get_axis(RIGHT_X_AXIS),
-                -4 * joystick.get_axis(LEFT_Y_AXIS),
+                TURN_SCALING * joystick.get_axis(RIGHT_X_AXIS),
+                ACC_SCALING * joystick.get_axis(LEFT_Y_AXIS),
             )
             env.step([action])
             multi_env.render()
             time.sleep(multi_env.dt)
     multi_env.world.close()
-    return
 
 
 if __name__ == "__main__":

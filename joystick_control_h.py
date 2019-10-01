@@ -3,7 +3,6 @@ import os
 import time
 from absl import app, flags
 import gym
-import numpy as np
 import pygame
 from stable_baselines import PPO2
 from stable_baselines.common.vec_env import VecNormalize, SubprocVecEnv
@@ -11,9 +10,7 @@ import wandb
 import driving_envs  # pylint: disable=unused-import
 from generate_videos import get_best_step
 from single_agent_env import VecSingleEnv
-
-LEFT_Y_AXIS = 1
-RIGHT_X_AXIS = 3
+from joystick_utils import LEFT_Y_AXIS, RIGHT_X_AXIS, TURN_SCALING, ACC_SCALING
 
 FLAGS = flags.FLAGS
 # NOTE: generate_videos.py already defines the run_id flag.
@@ -30,7 +27,10 @@ class JoystickPolicy:
         del obs
         pygame.event.pump()
         joystick = self.joystick
-        return (-.05 * joystick.get_axis(RIGHT_X_AXIS), -4 * joystick.get_axis(LEFT_Y_AXIS))
+        return (
+            TURN_SCALING * joystick.get_axis(RIGHT_X_AXIS),
+            ACC_SCALING * joystick.get_axis(LEFT_Y_AXIS),
+        )
 
     def reset(self):
         pass
