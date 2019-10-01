@@ -1,7 +1,11 @@
-"""Joystick control the robot car."""
+"""Joystick control the robot car, while the human car is controlled by BC policies."""
 import time
 import pygame
-from single_agent_env import make_single_env, BCPolicy
+import gym
+from stable_baselines.common.vec_env import DummyVecEnv
+import driving_envs  # pylint: disable=unused-import
+from single_agent_env import VecSingleEnv, BCPolicy
+
 
 LEFT_Y_AXIS = 1
 RIGHT_X_AXIS = 3
@@ -14,34 +18,28 @@ def main():
     assert len(joysticks) >= 1, "Need a joystick to be connected."
     joystick = joysticks[0]
     joystick.init()
-    env = make_single_env(
-        human_policies=[BCPolicy("bc_weights/typeA.h5"), BCPolicy("bc_weights/typeB.h5")]
+    multi_env = gym.make("Merging-v0")
+    env = VecSingleEnv(
+        DummyVecEnv([lambda: multi_env]),
+        human_policies=[BCPolicy("bc_weights/typeA.h5"), BCPolicy("bc_weights/typeB.h5")],
+        discrete=False,
     )
-    print("Starting in 5!")
     for _ in range(10):
         done = False
-        obs = env.reset()
-        env.render()
-        episode_data = []
-        i = 0
-        ret = 0
+        env.reset()
+        multi_env.render()
+        print("Starting in 5!")
         time.sleep(5)
         while not done:
             pygame.event.pump()
             action = (
-                -0.3 * joystick.get_axis(RIGHT_X_AXIS),
-                -1 * joystick.get_axis(LEFT_Y_AXIS),
+                -0.05 * joystick.get_axis(RIGHT_X_AXIS),
+                -4 * joystick.get_axis(LEFT_Y_AXIS),
             )
-            next_obs, rew, done, debug = env.step(action)
-            ret += rew
-            del debug
-            episode_data.append((obs, action, rew, next_obs, done))
-            obs = next_obs
-            env.render()
-            time.sleep(env.multi_env.dt)
-            i += 1
-        print("i: {}, Return: {}".format(i, ret))
-    env.multi_env.world.close()
+            env.step([action])
+            multi_env.render()
+            time.sleep(multi_env.dt)
+    multi_env.world.close()
     return
 
 

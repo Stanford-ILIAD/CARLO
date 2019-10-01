@@ -1,12 +1,10 @@
-"""Train bc policy on folder of demos."""
+"""Train behavior cloning model on folder of demos."""
 import os
 from absl import flags, app
 import numpy as np
-import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import load_model
-from tensorflow.keras.initializers import Constant
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("folder", "demos", "Folder to read data from.")
@@ -14,6 +12,7 @@ flags.DEFINE_string("save_name", "model.h5", "Output weights file name.")
 
 
 def main(_argv):
+    """Train and save behavior cloning model."""
     folder = FLAGS.folder
     states, actions = [], []
     for path in os.listdir(folder):
@@ -31,13 +30,14 @@ def main(_argv):
     action_std = np.std(h_actions, axis=0).tolist()
 
     def normalize_obs(obs, mean=0, std=1):
-        import tensorflow as tf
+        # HACK: re-importing tf is required for keras model loading to work.
+        import tensorflow as tf  # pylint: disable=redefined-outer-name,reimported
         mean = tf.convert_to_tensor(mean, dtype=tf.float32)
         std = tf.convert_to_tensor(std, dtype=tf.float32)
         return (obs - mean) / (1e-6 + std)
 
     def normalize_action(act, mean=0, std=1):
-        import tensorflow as tf
+        import tensorflow as tf  # pylint: disable=redefined-outer-name,reimported
         mean = tf.convert_to_tensor(mean, dtype=tf.float32)
         std = tf.convert_to_tensor(std, dtype=tf.float32)
         return act * std + mean
@@ -60,8 +60,8 @@ def main(_argv):
     model.compile(optimizer=keras.optimizers.Adam(0.001), loss="mse", metrics=["mse"])
     model.fit(states, h_actions, epochs=20, batch_size=32)
     model.save(FLAGS.save_name)
-    del model
     # Checks that saving worked.
+    del model
     model = load_model(FLAGS.save_name)
     model.evaluate(states, h_actions)
 

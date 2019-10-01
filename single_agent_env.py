@@ -124,58 +124,13 @@ def get_human_policies(mode, dt):
         raise ValueError("Unrecognized mode {}".format(mode))
 
 
-class PidSingleEnv(gym.Env):
-    """Wrapper that turns multi-agent driving env into a single agent env (the robot)."""
-
-    def __init__(self, human_policies=None, discrete: bool = False, random=True, **kwargs):
-        self.multi_env = gym.make("Merging-v0", **kwargs)
-        self.human_policies = human_policies
-        self.discrete = discrete
-        self.random = random
-        self._policy_idx = 0
-        self._human_pol = None
-        self.previous_obs = None
-        if discrete:
-            self.num_bins = (5, 5)
-            self.binner = [np.linspace(-1, 1, num=n) for n in self.num_bins]
-            self.action_space = spaces.Discrete(int(np.prod(self.num_bins)))
-            self.int_to_tuple = list(product(*[range(x) for x in self.num_bins]))
-            self.observation_space = spaces.Box(-np.inf, np.inf, shape=(12,))
-        else:
-            self.action_space = spaces.Box(np.array((-1.0, -1.0)), np.array((1.0, 1.0)))
-            self.observation_space = spaces.Box(-np.inf, np.inf, shape=(12,))
-
-    def step(self, action):
-        if self.discrete:
-            action = self.int_to_tuple[action]
-            action = np.array([self.binner[i][a] for i, a in enumerate(action)])
-        processed_action = np.array((action[0] * 0.1, action[1] * 4))
-        h_action = self._human_pol.action(self.previous_obs)
-        multi_action = np.concatenate((h_action, processed_action))
-        obs, rew, done, debug = self.multi_env.step(multi_action)
-        self.previous_obs = obs
-        return obs, rew, done, debug
-
-    def reset(self):
-        if self.random:
-            self._human_pol = np.random.choice(self.human_policies)
-        else:
-            self._human_pol = self.human_policies[self._policy_idx]
-            self._policy_idx = (self._policy_idx + 1) % len(self.human_policies)
-        obs = self.multi_env.reset()
-        self.previous_obs = obs
-        return obs
-
-    def render(self, mode="human"):
-        return self.multi_env.render(mode=mode)
-
-
 class VecSingleEnv(VecEnvWrapper):
     """VecEnvWrapper that turns multi-agent driving env into a single agent env (the robot)."""
 
-    def __init__(self, venv, human_policies=None):
+    def __init__(self, venv, human_policies=None, discrete=True):
         VecEnvWrapper.__init__(self, venv)
         self.human_policies = human_policies
+        self.discrete = discrete
         num_angle_bins, num_acc_bins = 5, 5
         self.binner = [
             np.linspace(-0.1, 0.1, num=num_angle_bins),
@@ -188,10 +143,13 @@ class VecSingleEnv(VecEnvWrapper):
         self._env_to_human = None
 
     def step_async(self, actions):
-        r_actions = []
-        for act in actions:
-            act_tuple = self.int_to_tuple[act]
-            r_actions.append(np.array([self.binner[i][a] for i, a in enumerate(act_tuple)]))
+        if self.discrete:
+            r_actions = []
+            for act in actions:
+                act_tuple = self.int_to_tuple[act]
+                r_actions.append(np.array([self.binner[i][a] for i, a in enumerate(act_tuple)]))
+        else:
+            r_actions = actions
         h_actions_grid = []
         for human_pol in self.human_policies:
             if hasattr(human_pol, "batch_action"):
@@ -227,19 +185,6 @@ class VecSingleEnv(VecEnvWrapper):
         else:
             self.previous_obs = obs
         return obs
-
-
-@gin.configurable
-def make_single_env(human_mode=None, **kwargs):
-    """Helper function to create the human policies and then the single agent env."""
-    if human_mode is not None:
-        assert "human_policies" not in kwargs, "Set one of human_mode or human_policies."
-        human_policies = get_human_policies(human_mode, 0.1)
-        kwargs["human_policies"] = human_policies
-    else:
-        assert "human_policies" in kwargs, "Set one of human_mode or human_policies."
-    env = PidSingleEnv(**kwargs)
-    return env
 
 
 def main():
