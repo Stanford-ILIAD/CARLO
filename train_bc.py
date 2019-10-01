@@ -26,7 +26,7 @@ def main(_argv):
 
     state_mean = np.mean(states, axis=0).tolist()
     state_std = np.std(states, axis=0).tolist()
-    action_mean = np.std(h_actions, axis=0).tolist()
+    action_mean = np.mean(h_actions, axis=0).tolist()
     action_std = np.std(h_actions, axis=0).tolist()
 
     def normalize_obs(obs, mean=0, std=1):

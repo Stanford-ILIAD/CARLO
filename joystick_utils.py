@@ -9,7 +9,7 @@ RIGHT_X_AXIS = 3
 RIGHT_Y_AXIS = 4
 
 # Controls how sensitive the car control is to the joystick motion.
-TURN_SCALING = -0.05
+TURN_SCALING = -0.02
 ACC_SCALING = -4
 
 
