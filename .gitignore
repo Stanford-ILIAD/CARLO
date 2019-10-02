@@ -110,3 +110,4 @@ wandb
 *.h5
 *.npz
 ppo_driving/
+*.mp4
