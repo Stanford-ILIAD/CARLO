@@ -1,6 +1,7 @@
 """Joystick control the human car."""
 import os
 import pickle
+import random
 import time
 from absl import app, flags
 import gym
@@ -8,15 +9,12 @@ import pygame
 from stable_baselines import PPO2
 from stable_baselines.common.vec_env import VecNormalize, SubprocVecEnv
 import driving_envs  # pylint: disable=unused-import
-from driving_envs.graphics import Point, Text
 from single_agent_env import VecSingleEnv
 from joystick_utils import (
     LEFT_Y_AXIS,
     RIGHT_X_AXIS,
     TURN_SCALING,
     ACC_SCALING,
-    BUTTON_A,
-    BUTTON_B,
     display_countdown,
     draw_text,
 )
@@ -57,12 +55,19 @@ def main(_argv):
     model = PPO2.load(os.path.join(FLAGS.ckpt_folder, "model.pkl"))
     env_fns = num_envs * [lambda: gym.make("Merging-v0")]
     human_policy = JoystickPolicy(joystick)
-    env = VecNormalize(VecSingleEnv(SubprocVecEnv(env_fns), human_policies=[human_policy]))
+    env = VecNormalize(
+        VecSingleEnv(SubprocVecEnv(env_fns), human_policies=[human_policy]),
+        training=False,
+        norm_reward=False,
+    )
     env.load_running_average(FLAGS.ckpt_folder)
 
     multi_env = gym.make("Merging-v0")
 
-    eval_data = []
+    eval_data = {"A": [], "B": []}
+    type_order = ["A", "B"]
+    random.shuffle(type_order)
+    eval_txt_dict = {"A": "Phase A: Blue merges ahead", "B": "Phase B: Blue merges behind"}
     for eval_idx in range(10):
         obs = env.reset()
         state, dones = None, [False for _ in range(num_envs)]
@@ -72,9 +77,12 @@ def main(_argv):
         multi_env.state = env.get_attr("state")[0]
         multi_env.update_text()
         multi_env.render()
-        eval_type = "A" if eval_idx < 5 else "B"
-        txt = draw_text(multi_env.world.visualizer, 60, 60, "Eval type: {}".format(eval_type))
-        time.sleep(2)
+        eval_type = type_order[0] if eval_idx < 5 else type_order[1]
+        eval_txt = eval_txt_dict[eval_type]
+        if eval_idx % 5 < 2:
+            eval_txt = "(Practice) " + eval_txt
+        txt = draw_text(multi_env.world.visualizer, 60, 60, eval_txt)
+        input("Press ENTER when ready.")
         txt.undraw()
         display_countdown(multi_env, start_delay=5)
         ep_data = []
@@ -91,7 +99,7 @@ def main(_argv):
             time.sleep(0.1)
         if len(ep_data) != 60:
             print("Warning: episode length: {}.".format(len(ep_data)))
-        eval_data.append({"eval_type": eval_type, "ep_data": ep_data})
+        eval_data[eval_type].append(ep_data)
     multi_env.world.close()
     with open(FLAGS.out_path, "wb") as f:
         pickle.dump(eval_data, f)
