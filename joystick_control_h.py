@@ -1,7 +1,6 @@
 """Joystick control the human car."""
 import os
 import pickle
-import random
 import time
 from absl import app, flags
 import gym
@@ -44,6 +43,9 @@ class JoystickPolicy:
 
 
 def main(_argv):
+    dirname = os.path.dirname(FLAGS.out_path)
+    if dirname and not os.path.exists(dirname):
+        os.makedirs(dirname)
     pygame.init()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
@@ -66,7 +68,6 @@ def main(_argv):
 
     eval_data = {"A": [], "B": []}
     type_order = ["A", "B"]
-    random.shuffle(type_order)
     eval_txt_dict = {"A": "Phase A: Blue merges ahead", "B": "Phase B: Blue merges behind"}
     for eval_idx in range(10):
         obs = env.reset()
