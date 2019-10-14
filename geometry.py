@@ -51,6 +51,20 @@ class Point:
 			
 		raise NotImplementedError
 		
+	def hasPassed(self, other: Union['Point', 'Line', 'Rectangle', 'Circle'], direction: 'Point') -> bool:
+		if isinstance(other, Point):
+			p = other
+		elif isinstance(other, Line):
+			p = (other.p1 + other.p2) / 2.
+		elif isinstance(other, Rectangle):
+			p = (other.c1 + other.c2 + other.c3 + other.c4) / 4.
+		elif isinstance(other, Circle):
+			p = other.m
+		else:
+			raise NotImplementedError
+		return direction.dot(p - self) <= 0
+			
+		
 	def distanceTo(self, other: Union['Point', 'Line', 'Rectangle', 'Circle']) -> float:
 		if isinstance(other, Point):
 			return (self - other).norm(p = 2)
@@ -162,6 +176,10 @@ class Line:
 		v2 = (other.p2 - other.p1)
 		return v1.dot(v2)
 		
+	def hasPassed(self, other: Union['Point', 'Line', 'Rectangle', 'Circle'], direction: Point) -> bool:
+		p = (self.p1 + self.p2) / 2.
+		return p.hasPassed(other, direction)
+		
 	def distanceTo(self, other: 'Point') -> float:
 		if isinstance(other, Point):
 			return other.distanceTo(self)
@@ -200,6 +218,10 @@ class Rectangle:
 
 		raise NotImplementedError
 		
+	def hasPassed(self, other: Union['Point', 'Line', 'Rectangle', 'Circle'], direction: Point) -> bool:
+		p = (self.c1 + self.c2 + self.c3 + self.c4) / 4.
+		return p.hasPassed(other, direction)
+		
 	def distanceTo(self, other: 'Point') -> float:
 		if isinstance(other, Point):
 			return other.distanceTo(self)
@@ -221,6 +243,9 @@ class Circle:
 			return self.m.distanceTo(other.m) <= self.r + other.r
 			
 		raise NotImplementedError
+		
+	def hasPassed(self, other: Union['Point', 'Line', 'Rectangle', 'Circle'], direction: Point) -> bool:
+		return self.m.hasPassed(other, direction)
 		
 	def distanceTo(self, other: 'Point') -> float:
 		if isinstance(other, Point):
