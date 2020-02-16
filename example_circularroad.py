@@ -75,7 +75,7 @@ if not human_controller:
         w.render()
         time.sleep(dt/4) # Let's watch it 4x
 
-        if w.collision_exists(): # Or we can check if there is any collision at all.
+        if w.collision_exists(): # We can check if there is any collision at all.
             print('Collision exists somewhere...')
 
 else:
