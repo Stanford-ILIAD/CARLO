@@ -192,10 +192,32 @@ class Line:
         p = (self.p1 + self.p2) / 2.
         return p.hasPassed(other, direction)
         
-    def distanceTo(self, other: 'Point') -> float:
+    def distanceTo(self, other: Union['Point', 'Line', 'Rectangle', 'Circle', 'Ring']) -> float:
         if isinstance(other, Point):
             return other.distanceTo(self)
-        raise NotImplementedError # TODO: implement the other cases
+            
+        elif isinstance(other, Line):
+            if self.intersectsWith(other): return 0.
+            return np.min([self.p1.distanceTo(other.p1), self.p1.distanceTo(other.p2), self.p2.distanceTo(other.p1), self.p2.distanceTo(other.p2)])
+            
+        elif isinstance(other, Rectangle):
+            if self.intersectsWith(other): return 0.
+            other_edges = other.edges
+            return np.min([self.distanceTo(e) for e in other_edges])
+            
+        elif isinstance(other, Circle):
+            return np.maximum(0, other.m.distanceTo(self) - other.r)
+            
+        elif isinstance(other, Ring):
+            if self.intersectsWith(other): return 0.
+            p1m = self.p1.distanceTo(other.m)
+            if p1m < other.r_inner: # the line is inside the ring
+                p2m = self.p2.distanceTo(other.m)
+                return other.r_inner - np.maximum(p1m, p2m)
+            else: # the line is completely outside
+                return np.maximum(0, other.m.distanceTo(self) - other.r_outer)   
+                
+        raise NotImplementedError
 
 class Rectangle:
     def __init__(self, c1: Point, c2: Point, c3: Point): # 3 points are enough to represent a rectangle
@@ -235,9 +257,15 @@ class Rectangle:
         p = (self.c1 + self.c2 + self.c3 + self.c4) / 4.
         return p.hasPassed(other, direction)
         
-    def distanceTo(self, other: 'Point') -> float:
-        if isinstance(other, Point):
+    def distanceTo(self, other: Union['Point', 'Line', 'Rectangle', 'Circle', 'Ring']) -> float:
+        if isinstance(other, Point) or isinstance(other, Line):
             return other.distanceTo(self)
+
+        elif isinstance(other, Rectangle) or isinstance(other, Circle) or isinstance(other, Ring):
+            if self.intersectsWith(other): return 0.
+            E = self.edges
+            return np.min([e.distanceTo(other) for e in E])
+
         raise NotImplementedError # TODO: implement the other cases
         
     
@@ -264,10 +292,19 @@ class Circle:
     def hasPassed(self, other: Union['Point', 'Line', 'Rectangle', 'Circle', 'Ring'], direction: Point) -> bool:
         return self.m.hasPassed(other, direction)
         
-    def distanceTo(self, other: 'Point') -> float:
-        if isinstance(other, Point):
+    def distanceTo(self, other: Union['Point', 'Line', 'Rectangle', 'Circle', 'Ring']) -> float:
+        if isinstance(other, Point) or isinstance(other, Line) or isinstance(other, Rectangle):
             return other.distanceTo(self)
-        raise NotImplementedError # TODO: implement the other cases
+            
+        elif isinstance(other, Circle):
+            return np.maximum(0, self.m.distanceTo(other.m) - self.r - other.r)
+            
+        elif isinstance(other, Ring):
+            if self.intersectsWith(other): return 0.
+            d = self.m.distanceTo(other.m)
+            return np.maximum(other.r_inner - d, d - other.r_outer) - self.r
+            
+        raise NotImplementedError
             
             
 class Ring:
@@ -281,20 +318,29 @@ class Ring:
         return 'Ring(' + str(self.m) +  ', inner radius = ' + str(self.r_inner) +  ', outer radius = ' + str(self.r_outer) + ')'
         
     def intersectsWith(self, other: Union['Line', 'Rectangle', 'Circle', 'Ring']):
-        if isinstance(other, Line) or isinstance(other, Rectangle) or isinstance(other, Ring):
+        if isinstance(other, Line) or isinstance(other, Rectangle) or isinstance(other, Circle):
             return other.intersectsWith(self)
             
         elif isinstance(other, Ring):
-            if self.m.distanceTo(other.m) > self.r_outer + other.r_outer: return False # rings are far away
-            if self.m.distanceTo(other.m) + self.r_outer < other.r_inner: return False # self is completely inside other
-            if self.m.distanceTo(other.m) + other.r_outer < self.r_inner: return False # other is completely inside self
+            d = self.m.distanceTo(other.m)
+            if d > self.r_outer + other.r_outer: return False # rings are far away
+            if d + self.r_outer < other.r_inner: return False # self is completely inside other
+            if d + other.r_outer < self.r_inner: return False # other is completely inside self
             return True
+            
         raise NotImplementedError
         
     def hasPassed(self, other: Union['Point', 'Line', 'Rectangle', 'Circle', 'Ring'], direction: Point) -> bool:
         return self.m.hasPassed(other, direction)
         
-    def distanceTo(self, other: 'Point') -> float:
-        if isinstance(other, Point):
+    def distanceTo(self, other: Union['Point', 'Line', 'Rectangle', 'Circle', 'Ring']) -> float:
+        if isinstance(other, Point) or isinstance(other, Line) or isinstance(other, Rectangle) or isinstance(other, Circle):
             return other.distanceTo(self)
+            
+        if isinstance(other, Ring):
+            if d > self.r_outer + other.r_outer: return d - self.r_outer - other.r_outer # rings are far away
+            if d + self.r_outer < other.r_inner: return other.r_inner - d - self.r_outer # self is completely inside other
+            if d + other.r_outer < self.r_inner: return self.r_inner - d - other.r_outer # other is completely inside self
+            return 0
+            
         raise NotImplementedError # TODO: implement the other cases

@@ -36,9 +36,9 @@ class Entity:
             # (i) the longer side of the rectangle is always the nominal direction of the car
             # (ii) the center of mass is the same as the geometric center of the RectangleEntity.
             return np.maximum(self.size.x, self.size.y) / 2.
-        if isinstance(self, CircleEntity):
+        elif isinstance(self, CircleEntity):
             return self.radius
-        if isinstance(self, RingEntity):
+        elif isinstance(self, RingEntity):
             return (self.inner_radius + self.outer_radius) / 2.
         raise NotImplementedError
     
@@ -81,7 +81,7 @@ class Entity:
             '''
             
             self.center = new_center
-            self.heading = (new_heading + np.pi) % (2 * np.pi) - np.pi # wrap the heading angle between -pi and +pi
+            self.heading = np.mod(new_heading, 2*np.pi) # wrap the heading angle between 0 and +2pi
             self.velocity = new_velocity
             self.acceleration = new_acceleration
             self.angular_velocity = new_angular_velocity
@@ -96,16 +96,14 @@ class Entity:
             return self.obj.intersectsWith(other.obj)
         elif isinstance(other, Point):
             return self.obj.intersectsWith(other)
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
         
     def distanceTo(self, other: Union['Point','Entity']) -> float:
         if isinstance(other, Entity):
             return self.obj.distanceTo(other.obj)
         elif isinstance(other, Point):
             return self.obj.distanceTo(other)
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
         
     def copy(self):
         return copy.deepcopy(self)

@@ -5,7 +5,7 @@ from geometry import Point
 import time
 from tkinter import *
 
-human_controller = True
+human_controller = False
 
 dt = 0.1 # time steps in terms of seconds. In other words, 1/dt is the FPS.
 world_width = 120
@@ -27,7 +27,8 @@ w = World(dt, width = world_width, height = world_height, ppm = 6) # The world i
 # To create a circular road, we will add a CircleBuilding and then a RingBuilding around it
 cb = CircleBuilding(Point(world_width/2, world_height/2), inner_building_radius, 'gray80')
 w.add(cb)
-w.add(RingBuilding(Point(world_width/2, world_height/2), inner_building_radius + num_lanes * lane_width + (num_lanes - 1) * lane_marker_width, 1+np.sqrt((world_width/2)**2 + (world_height/2)**2), 'gray80'))
+rb = RingBuilding(Point(world_width/2, world_height/2), inner_building_radius + num_lanes * lane_width + (num_lanes - 1) * lane_marker_width, 1+np.sqrt((world_width/2)**2 + (world_height/2)**2), 'gray80')
+w.add(rb)
 
 # Let's also add some lane markers on the ground. This is just decorative. Because, why not.
 for lane_no in range(num_lanes - 1):
@@ -51,15 +52,25 @@ w.render() # This visualizes the world we just constructed.
 
 if not human_controller:
     # Let's implement some simple policy for the car c1
-    desired_lane = 0
-    c1.set_control(0., 0.5) # Initially, the car will have 0 steering and 0.5 acceleration.
+    desired_lane = 1
+    c1.set_control(0., 0.1) # Initially, the car will have 0 steering and 0.5 acceleration.
     for k in range(600):
+        lp = 0.
+        if c1.distanceTo(cb) < desired_lane*(lane_width + lane_marker_width) + 0.2:
+            lp += 0.
+        elif c1.distanceTo(rb) < (num_lanes - desired_lane - 1)*(lane_width + lane_marker_width) + 0.3:
+            lp += 1.
+        
         v = c1.center - cb.center
-        v = (np.arctan2(v.y, v.x) + np.pi/2 + np.pi) % (2 * np.pi) - np.pi
+        v = np.mod(np.arctan2(v.y, v.x) + np.pi/2, 2*np.pi)
         if c1.heading < v:
-            c1.set_control(0.1, 0.5)
+            lp += 0.7
         else:
-            c1.set_control(0, 0.5)
+            lp += 0.
+        
+        if np.random.rand() < lp: c1.set_control(0.2, 0.1)
+        else: c1.set_control(-0.1, 0.1)
+        
         w.tick() # This ticks the world for one time step (dt second)
         w.render()
         time.sleep(dt/4) # Let's watch it 4x
