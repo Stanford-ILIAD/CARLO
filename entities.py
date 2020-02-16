@@ -29,11 +29,44 @@ class Entity:
         self.inputSteering = inputSteering
         self.inputAcceleration = inputAcceleration
     
+    @property
+    def rear_dist(self) -> float: # distance between the rear wheels and the center of mass. This is needed to implement the kinematic bicycle model dynamics
+        if isinstance(self, RectangleEntity):
+            # only for this function, we assume
+            # (i) the longer side of the rectangle is always the nominal direction of the car
+            # (ii) the center of mass is the same as the geometric center of the RectangleEntity.
+            return np.maximum(self.size.x, self.size.y) / 2.
+        if isinstance(self, CircleEntity):
+            return self.radius
+        if isinstance(self, RingEntity):
+            return (self.inner_radius + self.outer_radius) / 2.
+        raise NotImplementedError
+    
     def tick(self, dt: float):
         if self.movable:
             speed = self.speed
             heading = self.heading
         
+            # Kinematic bicycle model dynamics based on
+            # "Kinematic and Dynamic Vehicle Models for Autonomous Driving Control Design" by
+            # Jason Kong, Mark Pfeiffer, Georg Schildbach, Francesco Borrelli
+            lr = self.rear_dist
+            lf = lr # we assume the center of mass is the same as the geometric center of the entity
+            beta = np.arctan(lr / (lf + lr) * np.tan(self.inputSteering))
+            
+            new_angular_velocity = speed * self.inputSteering # this is not needed and used for this model, but let's keep it for consistency (and to avoid if-else statements)
+            new_acceleration = self.inputAcceleration - self.friction
+            new_speed = np.clip(speed + new_acceleration * dt, self.min_speed, self.max_speed)
+            new_heading = heading + ((speed + new_speed)/lr)*np.sin(beta)*dt/2.
+            angle = (heading + new_heading)/2. + beta
+            new_center = self.center + (speed + new_speed)*Point(np.cos(angle), np.sin(angle))*dt / 2.
+            new_velocity = Point(new_speed * np.cos(new_heading), new_speed * np.sin(new_heading))
+            
+            '''
+            # Point-mass dynamics based on
+            # "Active Preference-Based Learning of Reward Functions" by
+            # Dorsa Sadigh, Anca D. Dragan, S. Shankar Sastry, Sanjit A. Seshia
+            
             new_angular_velocity = speed * self.inputSteering
             new_acceleration = self.inputAcceleration - self.friction * speed
             
@@ -44,6 +77,8 @@ class Entity:
                                     ((speed + new_speed) / 2.) * np.sin((new_heading + heading) / 2.))
             
             new_center = self.center + (self.velocity + new_velocity) * dt / 2.
+            
+            '''
             
             self.center = new_center
             self.heading = (new_heading + np.pi) % (2 * np.pi) - np.pi # wrap the heading angle between -pi and +pi

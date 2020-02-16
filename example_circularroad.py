@@ -3,6 +3,9 @@ from world import World
 from agents import Car, RingBuilding, CircleBuilding, Painting, Pedestrian
 from geometry import Point
 import time
+from tkinter import *
+
+human_controller = True
 
 dt = 0.1 # time steps in terms of seconds. In other words, 1/dt is the FPS.
 world_width = 120
@@ -38,25 +41,42 @@ for lane_no in range(num_lanes - 1):
 
 # A Car object is a dynamic object -- it can move. We construct it using its center location and heading angle.
 c1 = Car(Point(91.75,60), np.pi/2)
+c1.max_speed = 30.0 # let's say the maximum is 30 m/s (108 km/h)
+c1.velocity = Point(0, 3.0)
 w.add(c1)
 
 w.render() # This visualizes the world we just constructed.
 
 
-# Let's implement some simple policy for the car c1
-desired_lane = 0
-c1.set_control(0., 0.5) # Initially, the car will have 0 steering and 0.5 acceleration.
-for k in range(600):
-    v = c1.center - cb.center
-    v = (np.arctan2(v.y, v.x) + np.pi/2 + np.pi) % (2 * np.pi) - np.pi
-    if c1.heading < v:
-        c1.set_control(0.1, 0.5)
-    else:
-        c1.set_control(0, 0.5)
-    w.tick() # This ticks the world for one time step (dt second)
-    w.render()
-    time.sleep(dt/4) # Let's watch it 4x
 
-    if w.collision_exists(): # Or we can check if there is any collision at all.
-        print('Collision exists somewhere...')
+if not human_controller:
+    # Let's implement some simple policy for the car c1
+    desired_lane = 0
+    c1.set_control(0., 0.5) # Initially, the car will have 0 steering and 0.5 acceleration.
+    for k in range(600):
+        v = c1.center - cb.center
+        v = (np.arctan2(v.y, v.x) + np.pi/2 + np.pi) % (2 * np.pi) - np.pi
+        if c1.heading < v:
+            c1.set_control(0.1, 0.5)
+        else:
+            c1.set_control(0, 0.5)
+        w.tick() # This ticks the world for one time step (dt second)
+        w.render()
+        time.sleep(dt/4) # Let's watch it 4x
 
+        if w.collision_exists(): # Or we can check if there is any collision at all.
+            print('Collision exists somewhere...')
+
+else:
+    from interactive_policy import InteractivePolicy
+    c1.set_control(0., 0.) # Initially, the car will have 0 steering and 0 acceleration.
+    interactive_policy = InteractivePolicy(w)
+    for k in range(600):
+        c1.set_control(interactive_policy.steering, interactive_policy.acceleration)
+        w.tick() # This ticks the world for one time step (dt second)
+        w.render()
+        time.sleep(dt/4) # Let's watch it 4x
+        print(interactive_policy.steering)
+        if w.collision_exists():
+            import sys
+            sys.exit(0)
