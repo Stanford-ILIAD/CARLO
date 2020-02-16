@@ -17,7 +17,7 @@ INSTALLATION: Put this file somewhere where Python can see it.
 OVERVIEW: There are two kinds of objects in the library. The GraphWin
 class implements a window where drawing can be done and various
 GraphicsObjects are provided that can be drawn into a GraphWin. As a
-simple example, here is a complete program to draw a circle of radius
+simple example, here is a complete program to draw a Circle of radius
 10 centered in a 100x100 window:
 
 --------------------------------------------------------------------
@@ -60,6 +60,11 @@ Programming: An Introduction to Computer Science" by John Zelle,
 published by Franklin, Beedle & Associates.  Also see
 http://mcsp.wartburg.edu/zelle/python for a quick reference"""
 
+# 
+# 2/15/2020:
+#     * Added the Ring class to create circular rings (not oval-shaped ones)
+# Erdem Biyik has downloaded Version 4.2 on 8/14/2019
+#
 # Version 4.2 5/26/2011
 #     * Modified Image to allow multiple undraws like other GraphicsObjects
 # Version 4.1 12/29/2009
@@ -492,6 +497,7 @@ class _BBox(GraphicsObject):
         GraphicsObject.__init__(self, options)
         self.p1 = p1.clone()
         self.p2 = p2.clone()
+        self.setWidth(0)
 
     def _move(self, dx, dy):
         self.p1.x = self.p1.x + dx
@@ -522,6 +528,42 @@ class Rectangle(_BBox):
         
     def clone(self):
         other = Rectangle(self.p1, self.p2)
+        other.config = self.config.copy()
+        return other
+
+class OvalRing(_BBox): # needs three parameters: minor radius, major radius, thickness -- thickness doesn't change around the ring
+
+    def __init__(self, p1, p2, thickness):
+        _BBox.__init__(self, p1, p2)
+        self.thickness = thickness
+        self.setWidth(thickness)
+        self.setFill("") # so that it will be transparent inside the ring
+        self.setFill = self.setOutline # so that setFill will now only paint the ring, and not the inside
+        
+    def clone(self):
+        other = OvalRing(self.p1, self.p2, self.thickness)
+        other.config = self.config.copy()
+        return other
+        
+    def _draw(self, canvas, options):
+        p1 = self.p1
+        p2 = self.p2
+        x1,y1 = canvas.toScreen(p1.x,p1.y)
+        x2,y2 = canvas.toScreen(p2.x,p2.y)
+        return canvas.create_oval(x1,y1,x2,y2,options)
+        
+class CircleRing(OvalRing):
+    
+    def __init__(self, center, inner_radius, outer_radius):
+        radius = (outer_radius + inner_radius ) / 2.
+        p1 = Point(center.x-radius, center.y-radius)
+        p2 = Point(center.x+radius, center.y+radius)
+        OvalRing.__init__(self, p1, p2, outer_radius - inner_radius)
+        self.inner_radius = inner_radius
+        self.outer_radius = outer_radius
+        
+    def clone(self):
+        other = CircleRing(self.getCenter(), self.inner_radius, self.outer_radius)
         other.config = self.config.copy()
         return other
         
@@ -591,6 +633,7 @@ class Polygon(GraphicsObject):
             points = points[0]
         self.points = list(map(Point.clone, points))
         GraphicsObject.__init__(self, ["outline", "width", "fill"])
+        self.setOutline("")
         
     def clone(self):
         other = Polygon(*self.points)
