@@ -12,9 +12,13 @@ You need to have the following libraries with [Python3](http://www.python.org/do
 ## Running
 Simply run
 ```python
-	python example.py
+	python example_intersection.py
 ```
-for a simple demo. You can also have a look at this file to understand how to customize your own environment. It is very straightforward.
+or
+```python
+	python example_circularroad.py
+```
+for a simple demo. You can also have a look at these files to understand how to customize your own environment. It is very straightforward.
 
 ## Features
 CARLO currently supports Cars and Pedestrians as the dynamic objects. They both use point-mass dynamics.
