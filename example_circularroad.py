@@ -5,10 +5,10 @@ from geometry import Point
 import time
 from tkinter import *
 
-human_controller = False
+human_controller = True
 
 dt = 0.1 # time steps in terms of seconds. In other words, 1/dt is the FPS.
-world_width = 120
+world_width = 120 # in meters
 world_height = 120
 inner_building_radius = 30
 num_lanes = 2
@@ -78,16 +78,15 @@ if not human_controller:
         if w.collision_exists(): # We can check if there is any collision at all.
             print('Collision exists somewhere...')
 
-else:
-    from interactive_policy import InteractivePolicy
+else: # Let's use the keyboard input for human control
+    from interactive_controllers import KeyboardController
     c1.set_control(0., 0.) # Initially, the car will have 0 steering and 0 acceleration.
-    interactive_policy = InteractivePolicy(w)
+    controller = KeyboardController(w)
     for k in range(600):
-        c1.set_control(interactive_policy.steering, interactive_policy.acceleration)
+        c1.set_control(controller.steering, controller.acceleration)
         w.tick() # This ticks the world for one time step (dt second)
         w.render()
         time.sleep(dt/4) # Let's watch it 4x
-        print(interactive_policy.steering)
         if w.collision_exists():
             import sys
             sys.exit(0)

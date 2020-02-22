@@ -1,6 +1,10 @@
 import numpy as np
+try:
+    import pygame # necessary only for the SteeringWheelController
+except ImportError:
+    print('pygame is not installed, you won\'t be able to use the steering wheel.')
 
-class InteractivePolicy:
+class KeyboardController:
     def __init__(self, world):
         self._steering = 0.
         self._acceleration = 0.
@@ -53,3 +57,21 @@ class InteractivePolicy:
         self.steering += 0.2
     def arrow_right_press(self, event):
         self.steering -= 0.2
+
+
+
+class SteeringWheelController: # For Logitech G29 Steering Wheel
+    def __init__(self, world):
+        pygame.init()
+        pygame.joystick.init()
+        self.joystick = pygame.joystick.Joystick(0)
+        self.joystick.init()
+    
+    @property
+    def steering(self):
+        events = pygame.event.get() # This is necessary
+        return -self.joystick.get_axis(0) / 2.
+    @property
+    def acceleration(self):
+        events = pygame.event.get() # This is necessary
+        return -self.joystick.get_axis(1)

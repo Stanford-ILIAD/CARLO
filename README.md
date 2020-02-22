@@ -8,6 +8,7 @@ CARLO stands for _[CARLA](http://carla.org/) - Low Budget_. CARLO is definitely 
 You need to have the following libraries with [Python3](http://www.python.org/downloads):
 - [NumPy](http://www.numpy.org/)
 - [TkInter](http://wiki.python.org/moin/TkInter)
+- [pygame](https://www.pygame.org/) (required only for Steering Wheel controller)
 
 ## Running
 Simply run
@@ -18,7 +19,7 @@ or
 ```python
 	python example_circularroad.py
 ```
-for a simple demo. You can also have a look at these files to understand how to customize your own environment. It is very straightforward.
+for simple demos. The former has an example of how to use Steering Wheel controller (only Logitech G29), and the latter shows how to use Keyboard controller. You can also have a look at these files to understand how to customize your own environment. It is very straightforward.
 
 ## Features
 CARLO currently supports Cars and Pedestrians as the dynamic objects. They both use point-mass dynamics.
