@@ -79,10 +79,10 @@ if not human_controller:
 
 else: # Let's use the keyboard input for human control
     from interactive_controllers import KeyboardController
-    c1.set_control(0., 0.) # Initially, the car will have 0 steering and 0 acceleration.
+    c1.set_control(0., 0.) # Initially, the car will have 0 steering and 0 throttle.
     controller = KeyboardController(w)
     for k in range(600):
-        c1.set_control(controller.steering, controller.acceleration)
+        c1.set_control(controller.steering, controller.throttle)
         w.tick() # This ticks the world for one time step (dt second)
         w.render()
         time.sleep(dt/4) # Let's watch it 4x

@@ -7,13 +7,13 @@ except ImportError:
 class KeyboardController:
     def __init__(self, world):
         self._steering = 0.
-        self._acceleration = 0.
+        self._throttle = 0.
         
         self.min_steering = -0.5
         self.max_steering = +0.5
         
-        self.min_acceleration = -1.5
-        self.max_acceleration = +1.5
+        self.min_throttle = -1.5
+        self.max_throttle = +1.5
     
         world.visualizer.win.bind("<KeyRelease-Up>", self.arrow_up_release)
         world.visualizer.win.bind("<KeyRelease-Down>", self.arrow_down_release)
@@ -31,28 +31,28 @@ class KeyboardController:
     def steering(self):
         return self._steering
     @property
-    def acceleration(self):
-        return self._acceleration
+    def throttle(self):
+        return self._throttle
     @steering.setter
     def steering(self, val):
         self._steering = np.clip(val, self.min_steering, self.max_steering)
-    @acceleration.setter
-    def acceleration(self, val):
-        self._acceleration = np.clip(val, self.min_acceleration, self.max_acceleration)
+    @throttle.setter
+    def throttle(self, val):
+        self._throttle = np.clip(val, self.min_throttle, self.max_throttle)
     
     def arrow_up_release(self, event):
-        self.acceleration -= 1.5
+        self.throttle -= 1.5
     def arrow_down_release(self, event):
-        self.acceleration += 1.5
+        self.throttle += 1.5
     def arrow_left_release(self, event):
         self.steering -= 0.5
     def arrow_right_release(self, event):
         self.steering += 0.5
         
     def arrow_up_press(self, event):
-        self.acceleration += 1.5
+        self.throttle += 1.5
     def arrow_down_press(self, event):
-        self.acceleration -= 1.5
+        self.throttle -= 1.5
     def arrow_left_press(self, event):
         self.steering += 0.5
     def arrow_right_press(self, event):
@@ -72,6 +72,6 @@ class SteeringWheelController: # For Logitech G29 Steering Wheel
         events = pygame.event.get() # This is necessary
         return -self.joystick.get_axis(0) / 2.
     @property
-    def acceleration(self):
+    def throttle(self):
         events = pygame.event.get() # This is necessary
         return -self.joystick.get_axis(1)

@@ -51,14 +51,14 @@ w.render() # This visualizes the world we just constructed.
 
 if not human_controller:
     # Let's implement some simple scenario with all agents
-    p1.set_control(0, 0.22) # The pedestrian will have 0 steering and 0.22 acceleration. So it will not change its direction.
+    p1.set_control(0, 0.22) # The pedestrian will have 0 steering and 0.22 throttle. So it will not change its direction.
     c1.set_control(0, 0.35)
     c2.set_control(0, 0.05)
     for k in range(400):
         # All movable objects will keep their control the same as long as we don't change it.
         if k == 100: # Let's say the first Car will release throttle (and start slowing down due to friction)
             c1.set_control(0, 0)
-        elif k == 200: # The first Car starts pushing the brake a little bit. The second Car starts turning right with some acceleration.
+        elif k == 200: # The first Car starts pushing the brake a little bit. The second Car starts turning right with some throttle.
             c1.set_control(0, -0.02)
         elif k == 325:
             c1.set_control(0, 0.8)
@@ -75,13 +75,13 @@ if not human_controller:
             print('Collision exists somewhere...')
 
 else: # Let's use the steering wheel (Logitech G29) for the human control of car c1
-    p1.set_control(0, 0.22) # The pedestrian will have 0 steering and 0.22 acceleration. So it will not change its direction.
+    p1.set_control(0, 0.22) # The pedestrian will have 0 steering and 0.22 throttle. So it will not change its direction.
     c2.set_control(0, 0.35)
     
     from interactive_controllers import SteeringWheelController
     controller = SteeringWheelController(w)
     for k in range(400):
-        c1.set_control(controller.steering, controller.acceleration)
+        c1.set_control(controller.steering, controller.throttle)
         w.tick() # This ticks the world for one time step (dt second)
         w.render()
         time.sleep(dt/4) # Let's watch it 4x
