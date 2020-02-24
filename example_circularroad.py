@@ -53,7 +53,6 @@ w.render() # This visualizes the world we just constructed.
 if not human_controller:
     # Let's implement some simple policy for the car c1
     desired_lane = 1
-    c1.set_control(0., 0.1) # Initially, the car will have 0 steering and 0.5 acceleration.
     for k in range(600):
         lp = 0.
         if c1.distanceTo(cb) < desired_lane*(lane_width + lane_marker_width) + 0.2:

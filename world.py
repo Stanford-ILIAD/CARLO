@@ -53,7 +53,8 @@ class World:
     def close(self):
         self.reset()
         self.static_agents = []
-        self.visualizer.close()
+        if self.visualizer.window_created:
+            self.visualizer.close()
         
     def reset(self):
         self.dynamic_agents = []
