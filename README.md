@@ -32,3 +32,16 @@ There are many hidden features right now. I will reveal them as I start writing 
 
 ## Contributing
 Feel free to contribute to the code and/or initiate issues for problems and questions.
+
+## Paper citation
+If you used CARLO for your experiments, consider citing the following paper (currently under review):
+
+<pre>
+@inproceedings{lowe2017multi,
+  title={Reinforcement Learning based Control of Imitative Policies for Near-Accident Driving},
+  author={Cao, Zhangjie and Biyik, Erdem and Wang, Woodrow Z. and Raventos, Allan and Gaidon, Adrien and Rosman, Guy and Sadigh, Dorsa},
+  booktitle={Submitted to Robotics: Science and Systems (RSS)},
+  year={2020},
+  month={July}
+}
+</pre>
