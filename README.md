@@ -28,13 +28,13 @@ It also supports Buildings and Paintings, which are useful mostly for decoration
 
 Collision dynamics are not implemented, but CARLO has methods that can check whether or not there exists a collision between two objects.
 
-There are many hidden features right now. I will reveal them as I start writing a documentation.
+There are many hidden features right now. We will reveal them as we start writing a documentation.
 
 ## Contributing
 Feel free to contribute to the code and/or initiate issues for problems and questions.
 
 ## Paper citation
-If you used CARLO for your experiments, consider citing the following paper (currently under review):
+If you used CARLO for your experiments, consider citing the following paper:
 
 <pre>
 @inproceedings{cao2020reinforcement,
