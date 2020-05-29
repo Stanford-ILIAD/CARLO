@@ -40,7 +40,7 @@ If you used CARLO for your experiments, consider citing the following paper (cur
 @inproceedings{cao2020reinforcement,
   title={Reinforcement Learning based Control of Imitative Policies for Near-Accident Driving},
   author={Cao, Zhangjie and Biyik, Erdem and Wang, Woodrow Z. and Raventos, Allan and Gaidon, Adrien and Rosman, Guy and Sadigh, Dorsa},
-  booktitle={Submitted to Robotics: Science and Systems (RSS)},
+  booktitle={Proceedings of Robotics: Science and Systems (RSS)},
   year={2020},
   month={July}
 }
