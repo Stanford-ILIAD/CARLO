@@ -22,7 +22,7 @@ or
 for simple demos. The former has an example of how to use Steering Wheel controller (only Logitech G29), and the latter shows how to use Keyboard controller. You can also have a look at these files to understand how to customize your own environment. It is very straightforward.
 
 ## Features
-CARLO currently supports Cars and Pedestrians as the dynamic objects. They both use point-mass dynamics.
+CARLO currently supports Cars and Pedestrians as the dynamic objects. They both use bicycle dynamics. The point-mass dynamics are commented out in the code.
 
 It also supports Buildings and Paintings, which are useful mostly for decoration purposes (e.g. sidewalks, zebra crossings, etc).
 
