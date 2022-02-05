@@ -76,6 +76,7 @@ if not human_controller:
 
         if w.collision_exists(): # We can check if there is any collision at all.
             print('Collision exists somewhere...')
+    w.close()
 
 else: # Let's use the keyboard input for human control
     from interactive_controllers import KeyboardController
@@ -89,3 +90,4 @@ else: # Let's use the keyboard input for human control
         if w.collision_exists():
             import sys
             sys.exit(0)
+    w.close()

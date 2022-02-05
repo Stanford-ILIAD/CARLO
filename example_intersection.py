@@ -70,9 +70,10 @@ if not human_controller:
         time.sleep(dt/4) # Let's watch it 4x
 
         if w.collision_exists(p1): # We can check if the Pedestrian is currently involved in a collision. We could also check c1 or c2.
-            print('Pedestrian has died, good job!')
+            print('Pedestrian has died!')
         elif w.collision_exists(): # Or we can check if there is any collision at all.
             print('Collision exists somewhere...')
+    w.close()
 
 else: # Let's use the steering wheel (Logitech G29) for the human control of car c1
     p1.set_control(0, 0.22) # The pedestrian will have 0 steering and 0.22 throttle. So it will not change its direction.
